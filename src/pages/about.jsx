@@ -165,7 +165,7 @@ export default function AboutUs() {
               </div>
 
               {/* Right Stats */}
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid lg:grid-cols-2 gap-6">
                 <div className="bg-white/10 backdrop-blur-md rounded-[30px] p-8 border border-white/10">
                   <h3 className="text-5xl font-bold">500+</h3>
                   <p className="mt-3 text-gray-300 leading-relaxed">

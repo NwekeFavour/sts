@@ -19,7 +19,7 @@ const Footer = () => {
               Compassionate Autism Support
             </p>
 
-            <h2 className="text-3xl lg:text-5xl font-bold text-[#513424] leading-tight">
+            <h2 className="text-[24px] lg:text-5xl font-bold text-[#513424] leading-tight">
               Helping Children Grow,
               <br />
               Learn & Flourish.

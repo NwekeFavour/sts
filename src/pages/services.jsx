@@ -249,7 +249,7 @@ export default function Services() {
                   Need Guidance?
                 </span>
 
-                <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight">
+                <h2 className="text-[24px] lg:text-5xl font-bold tracking-tight text-white leading-tight">
                   We’re Here to Help You
                   <span className="block">Find the Right Care</span>
                 </h2>

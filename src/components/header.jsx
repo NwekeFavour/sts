@@ -68,9 +68,6 @@ export default function Navbar() {
 
         {/* ── ACTIONS / CTA ── */}
         <div className="flex items-center gap-4">
-          <Link to="/request" className="btn-primary navbar__cta">
-            Request a Therapist
-          </Link>
 
           {/* Hamburger Menu Button */}
           <button

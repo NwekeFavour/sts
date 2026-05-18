@@ -321,7 +321,7 @@ export default function Home() {
               <span className="inline-block px-3 py-1 bg-white/10 text-xs font-medium tracking-wide rounded-full text-[#C5FF4D]">
                 For Professionals
               </span>
-              <h2 className="text-3xl lg:text-4xl font-bold tracking-tight">
+              <h2 className="text-[24px] lg:text-4xl font-bold tracking-tight">
                 Want to Become a Certified Autism Therapist?
               </h2>
               <p className="text-stone-400 text-sm max-w-2xl leading-relaxed">
