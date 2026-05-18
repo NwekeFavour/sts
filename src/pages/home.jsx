@@ -57,7 +57,7 @@ export default function Home() {
       
       <Navbar/>
       {/* ── HERO SECTION ── */}
-      <section className="relative overflow-hidden pt-26 pb-20 lg:pt-25 lg:pb-32">
+      <section className="relative overflow-hidden pt-30 pb-20 lg:pt-30 lg:pb-32">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-12 items-center">
           
           {/* Left Column: Content */}
@@ -67,7 +67,7 @@ export default function Home() {
               <span className="text-[#513424] font-normal italic!">Deserves to Flourish</span>
             </h1>
             
-            <p className="text-lg text-stone-600 max-w-lg leading-relaxed">
+            <p className="text-[15px] text-stone-600 max-w-lg leading-relaxed">
               St. Stephens Family provides specialist autism therapy for children and professional 
               training for aspiring therapists, guided by evidence, driven by compassion.
             </p>
@@ -131,7 +131,7 @@ export default function Home() {
           {/* Right Column: Visual Component Layout */}
           <div className="lg:col-span-6 relative flex justify-center lg:justify-end">
             {/* Main Light Green Wavy Container */}
-            <div className="relative w-full max-w-[480px] aspect-[4/5] bg-[#E8F8E8] rounded-[40px] rounded-tl-[140px] p-8 flex flex-col justify-between overflow-hidden shadow-sm">
+            <div className="relative w-full max-w-[480px] aspect-[4/5] bg-[#9e9c9b]/4 rounded-[40px] rounded-tl-[140px] p-8 flex flex-col justify-between overflow-hidden shadow-sm">
               
               {/* Social Media Floater left edge */}
               <div className="absolute left-4 top-1/3 flex flex-col gap-3 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-sm z-20">

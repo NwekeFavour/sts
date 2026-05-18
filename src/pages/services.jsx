@@ -56,7 +56,7 @@ const BENEFITS = [
 
 export default function Services() {
   return (
-    <main className="min-h-screen bg-white text-[#1A1A1A] antialiased">
+    <main className="min-h-screen = text-[#1A1A1A] antialiased">
       <Navbar />
 
       {/* ── HERO ── */}
@@ -79,7 +79,7 @@ export default function Services() {
                 Around Every Child
               </h1>
 
-              <p className="text-stone-600 text-lg leading-relaxed max-w-xl">
+              <p className="text-stone-600 text-[15px] leading-relaxed max-w-xl">
                 We provide specialized autism therapy services that empower
                 children, support families, and create meaningful developmental
                 progress through compassionate care.
@@ -109,7 +109,7 @@ export default function Services() {
                   key={item}
                   className="flex items-center gap-3 bg-stone-50 border border-stone-100 rounded-2xl px-4 py-4"
                 >
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#C5FF4D]" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#e48e15]" />
                   <p className="text-sm font-medium text-stone-700">{item}</p>
                 </div>
               ))}
@@ -118,7 +118,7 @@ export default function Services() {
 
           {/* Right */}
           <div className="lg:col-span-6">
-            <div className="relative bg-[#EEF8E8] rounded-[40px] rounded-tr-[140px] p-6 overflow-hidden">
+            <div className="relative bg-[#9e9c9b]/4 rounded-[40px] rounded-tr-[140px] p-6 overflow-hidden">
          <img
   src="https://plus.unsplash.com/premium_photo-1745839716056-7dc088097cc5?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
   alt="African child in therapy support session"

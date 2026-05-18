@@ -10,16 +10,16 @@ import Logo from "../assets/images/logo.png";
 
 const Footer = () => {
   return (
-    <footer className="bg-[#F7F9F4] border-t border-stone-200 mt-24">
+    <footer className=" border-stone-200 mt-24">
       <div className="max-w-7xl mx-auto px-6 py-16">
         {/* Top CTA */}
-        <div className="bg-[#C5FF4D] rounded-[32px] p-8 lg:p-12 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-16">
+        <div className="bg-[#d0aa75] rounded-[32px] p-8 lg:p-12 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-16">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-wider text-stone-700 mb-3">
+            <p className="text-sm font-semibold uppercase tracking-wider text-white mb-3">
               Compassionate Autism Support
             </p>
 
-            <h2 className="text-3xl lg:text-5xl font-semibold text-black leading-tight">
+            <h2 className="text-3xl lg:text-5xl font-bold text-[#513424] leading-tight">
               Helping Children Grow,
               <br />
               Learn & Flourish.
@@ -28,7 +28,7 @@ const Footer = () => {
 
           <Link
             to="/request"
-            className="group inline-flex items-center gap-2 bg-black text-white px-6 py-4 rounded-full text-sm font-medium hover:opacity-90 transition-all"
+            className="group inline-flex items-center gap-2 bg-white text-black px-6 py-4 rounded-full text-sm font-medium hover:opacity-90 transition-all"
           >
             Schedule Consultation
             <ArrowRight
@@ -103,7 +103,7 @@ const Footer = () => {
     <a
       key={i}
       href={social.href}
-      className="w-10 h-10 rounded-full bg-white border border-stone-200 flex items-center justify-center text-stone-700 hover:bg-stone-100 transition-colors"
+      className="w-10 h-10 rounded-full bg-white border border-stone-200 flex items-center justify-center text-stone-800 hover:bg-stone-100 transition-colors"
     >
       {social.icon}
     </a>
