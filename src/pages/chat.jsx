@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { useChatStore } from "../store/useChatStore";
 
 
-export const STELLA_CHARACTER = {
-  name: "Stella",
+export const STEPHANIE_CHARACTER = {
+  name: "Stephanie",
   role: "Support Assistant",
   centre: "St Stephens Therapy Centre",
   accentColor: "#4A7C5F",
@@ -28,7 +28,7 @@ export const STELLA_CHARACTER = {
     "Replacing a therapist",
   ],
   greeting:
-    "Hi there 👋 I'm Stella, the support assistant for St Stephens Therapy Centre.\n\nI can help with questions about our services, appointments, and how things work here. Please note — I'm not a therapist and can't provide medical advice or diagnoses.\n\nWhat can I help you with today?",
+    "Hi there 👋 I'm Stephanie, the support assistant for St Stephens Therapy Centre.\n\nI can help with questions about our services, appointments, and how things work here. Please note — I'm not a therapist and can't provide medical advice or diagnoses.\n\nWhat can I help you with today?",
 };
 
 
@@ -110,7 +110,7 @@ function BackArrowIcon() {
 // Sidebar panel content — shared between desktop static and mobile drawer
 // ---------------------------------------------------------------------------
 function SidebarContent({ onClose, onRequestHelp, isMobile }) {
-  const { name, role, centre, traits, canHelp, cannotHelp } = STELLA_CHARACTER;
+  const { name, role, centre, traits, canHelp, cannotHelp } = STEPHANIE_CHARACTER;
 
   const sec = {
     fontSize: 10, color: "rgba(255,255,255,0.38)", textTransform: "uppercase",
@@ -354,9 +354,9 @@ export default function StStephensChatbot() {
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: isMobile ? 13 : 14, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {isMobile ? "Stella · St Stephens" : "St Stephens Therapy Centre"}
+              {isMobile ? "Stephanie · St Stephens" : "St Stephens Therapy Centre"}
             </div>
-            <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>Support chat · Stella is available</div>
+            <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>Support chat · Stephanie is available</div>
           </div>
 
           <div style={{ fontSize: 11, background: "rgba(0,0,0,0.06)", color: "#666", padding: "3px 9px", borderRadius: 20, whiteSpace: "nowrap", flexShrink: 0 }}>
