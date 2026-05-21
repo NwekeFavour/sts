@@ -71,7 +71,7 @@ export default function Services() {
                 Our Services
               </span>
 
-              <h1 className="text-4xl lg:text-[68px] font-bold tracking-tight leading-[1.05] text-stone-900">
+              <h1 className="text-4xl lg:text-[50px] font-bold tracking-tight leading-[1.05] text-stone-900">
                 Therapy &
                 <span className="block text-[#513424] italic font-normal">
                   Support Designed

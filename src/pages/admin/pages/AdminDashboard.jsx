@@ -145,12 +145,14 @@ export default function AdminDashboard() {
       )}
 
       {/* Stat cards */}
-      <div className="grid lg:grid-cols-4 grid-cols-2 gap-5">
+      <div className="grid lg:grid-cols-4 grid-cols-1 md:grid-cols-2  gap-5">
         {STAT_CARDS.map((card) => (
           <Link
             key={card.label}
             to={card.link}
-            className={`bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 ${card.alert ? `ring-2 ${card.ring}` : ""}`}
+            className={`bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 min-h-[180px] flex flex-col justify-between ${
+              card.alert ? `ring-2 ${card.ring}` : ""
+            }`}
           >
             <div className="flex flex-wrap space-y-2 items-start justify-between mb-4">
               <div
@@ -193,7 +195,7 @@ export default function AdminDashboard() {
 
             <Link
               to="/admin/requests"
-              className="text-xs font-semibold text-[#E8890C] flex items-center gap-1 hover:underline"
+              className="text-xs font-semibold text-[#E8890C] flex items-center justify-end gap-1 hover:underline"
             >
               View all <ArrowRight size={12} />
             </Link>

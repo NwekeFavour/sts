@@ -6,7 +6,7 @@ export default function AboutUs() {
   return (
     <div>
       <Header />
-      <div className="bg-[#f8f8f8] min-h-screen">
+      <div className="= min-h-screen">
         {/* HERO */}
         <section className="relative overflow-hidden bg-black text-white">
           <img
@@ -21,7 +21,7 @@ export default function AboutUs() {
                 About Us
               </p>
 
-              <h1 className="text-4xl lg:text-[68px] font-bold leading-tight">
+              <h1 className="text-4xl lg:text-[50px] font-bold leading-tight">
                 Building Stronger Families & Communities
               </h1>
 

@@ -16,6 +16,9 @@ import AdminReports from "./pages/admin/pages/AdminReports";
 import AdminForms from "./pages/admin/pages/AdminForms";
 import { AdminNotifications, AdminSettings } from "./pages/admin/pages/AdminMisc";
 import NotFound from "./pages/not-found";
+import StStephensChatbot from "./pages/chat";
+import ResetPassword from "./pages/resetP";
+import ForgotPassword from "./pages/fpassword";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -29,6 +32,8 @@ function App() {
 
         {/* protected routes */}
         <Route path="/login" element={<AuthPages />} />
+        <Route path="/invite/reset-password" element={<ResetPassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
@@ -43,6 +48,7 @@ function App() {
 
 
         <Route path="*" element={<NotFound />} />
+        <Route path="/new" element={<StStephensChatbot/>}/>
       </Routes>
     </>
   );

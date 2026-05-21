@@ -1,8 +1,27 @@
 import { useState } from "react";
 import Logo from "../assets/images/logo.png";
+import useAuthStore from "../store/useAuthStore";
+import { useNavigate } from "react-router-dom";
 
 export default function AuthPages() {
   const [pages, setPages] = useState("login");
+  const { login, status, error } = useAuthStore();
+
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    const email = e.target.email.value;
+    const password = e.target.password.value;
+
+    try {
+      const { user } = await login({ email, password });
+      navigate(user.role === "admin" ? "/admin" : "/dashboard");
+
+    } catch (err) {
+      console.error("Login failed:", err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
@@ -46,13 +65,9 @@ export default function AuthPages() {
 
         {/* Right Section */}
 
-        <div className="bg-white md:hidden mx-auto pt-5  rounded-[50px]">
-          <img
-            src={Logo}
-            alt="St. Stephens Family"
-            className="w-[10px] h-auto object-contain"
-          />
-        </div>
+        <div className="lg:hidden flex justify-center my-8">
+                      <img src={Logo} alt="St. Stephens Family" className="w-[100px] h-auto object-contain" />
+                    </div>
         <div className="flex items-center justify-center p-8 md:p-12">
           {/* LOGIN */}
 
@@ -64,13 +79,14 @@ export default function AuthPages() {
                 Enter your credentials to continue.
               </p>
 
-              <form className="mt-8 space-y-5">
+              <form className="mt-8 space-y-5" onSubmit={handleLogin}>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email Address
                   </label>
 
                   <input
+                    name="email"
                     type="email"
                     placeholder="you@example.com"
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-black"
@@ -84,6 +100,7 @@ export default function AuthPages() {
                     </label>
 
                     <button
+                      onClick={() => navigate("/forgot-password")}
                       type="button"
                       className="text-sm text-black font-medium hover:underline"
                     >
@@ -92,6 +109,7 @@ export default function AuthPages() {
                   </div>
 
                   <input
+                    name="password"
                     type="password"
                     placeholder="••••••••"
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-black"
@@ -102,9 +120,17 @@ export default function AuthPages() {
                   type="submit"
                   className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:opacity-90 transition"
                 >
-                  Sign In
+                  {status === "loading" ? "Logging in..." : "Login"}
                 </button>
               </form>
+
+              {
+                status === "error" && (
+                  <p className="mt-4 text-sm text-red-600">
+                    {error || "Login failed. Please try again."}
+                  </p>
+                )
+              }
 
               <p className="mt-6 text-center text-sm text-gray-500">
                 Don’t have an account?{" "}
@@ -167,8 +193,9 @@ export default function AuthPages() {
                 </div>
 
                 <button
+                  disabled={true}
                   type="submit"
-                  className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:opacity-90 transition"
+                  className="w-full bg-black disabled:opacity-40 disabled:cursor-not-allowed  text-white py-3 rounded-xl font-semibold hover:opacity-90 transition"
                 >
                   Create Account
                 </button>

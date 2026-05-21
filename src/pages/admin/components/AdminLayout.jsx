@@ -50,7 +50,7 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden font-body">
+    <div className="flex h-screen overflow-hidden font-body">
       {/* Sidebar */}
       <AdminSidebar
         open={sidebarOpen}
