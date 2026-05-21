@@ -79,7 +79,7 @@ function MessageText({ text }) {
           );
         if (line.trim() === "") return <div key={i} style={{ height: 5 }} />;
         return <p key={i} style={{ margin: "2px 0" }} dangerouslySetInnerHTML={{ __html: boldify(line) }} />;
-      })}cons
+      })}
     </div>
   );
 }
