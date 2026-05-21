@@ -233,6 +233,48 @@ async function login(req, res) {
   }
 }
 
+async function getMe(req, res) {
+  const { userId } = req.params;
+ 
+  // Security: ensure the token belongs to the user being requested.
+  // Prevents user A from fetching user B's profile by guessing a UUID.
+  if (req.user.id !== userId) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+ 
+  try {
+    const { data: profile, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email, full_name, role, status, specialization, avatar_url, created_at")
+      .eq("id", userId)
+      .single();
+ 
+    if (error || !profile) {
+      return res.status(404).json({ error: "User not found" });
+    }
+ 
+    if (profile.status === "suspended") {
+      return res.status(403).json({ error: "Account suspended" });
+    }
+ 
+    return res.status(200).json({
+      user: {
+        id: profile.id,
+        email: profile.email,
+        name: profile.full_name,
+        role: profile.role,
+        status: profile.status,
+        specialization: profile.specialization ?? null,
+        avatarUrl: profile.avatar_url ?? null,
+        createdAt: profile.created_at,
+      },
+    });
+  } catch (err) {
+    console.error("[GET /me]", err);
+    return res.status(500).json({ error: "Failed to fetch user" });
+  }
+};
+
 // ─── Any user: request password reset ────────────────────────────────────────
 
 async function requestPasswordReset(req, res) {
@@ -358,4 +400,5 @@ module.exports = {
   requestPasswordReset,
   resendInvite,
   refreshToken,
+  getMe
 };

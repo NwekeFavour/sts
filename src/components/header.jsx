@@ -23,7 +23,7 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed bg-white! top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed bg-[#eff1ef]! top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
           ? "bg-white/80 md:backdrop-blur-md border-stone-100 py-4 shadow-xs"
           : "md:bg-transparent py-6"

@@ -26,7 +26,7 @@ export default function AboutUs() {
               </h1>
 
               <p className="mt-8 text-[15px] md:text-[16px] text-gray-200 max-w-2xl leading-relaxed">
-                At St. Stephens Family, we are committed to empowering children,
+                At St. Stephen's Family, we are committed to empowering children,
                 supporting parents, and creating safe environments where
                 families can thrive emotionally, socially, and spiritually.
               </p>

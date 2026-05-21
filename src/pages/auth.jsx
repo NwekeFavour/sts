@@ -55,7 +55,7 @@ export default function AuthPages() {
             </div>
 
             <div>
-              <p className="font-semibold">St. Stephens Family</p>
+              <p className="font-semibold">St. Stephen's Family</p>
               <p className="text-sm text-gray-300">
                 Secure authentication experience
               </p>

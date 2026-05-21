@@ -15,13 +15,13 @@ const HIGHLIGHTS = [
     desc: "Our laboratory assessments focus on identifying deficiencies and metabolic markers that may impact your child's overall wellbeing and development.",
   },
   {
-    title: "Personalized Laboratory Intervention Program Services",
-    desc: "We certify the next generation of autism specialists through our structured training and mentorship programme.",
+    title: "Personalized Laboratory Intervention Services",
+    desc: "We interpret laboratory evaluations and create customized nutritional support plans to improve your child’s health, behavior, and cognitive well-being.",
   },
   {
-    title: "Family-Centred Care",
-    desc: "Parents are partners. We guide families through every step, ensuring they feel confident and informed.",
-  },
+    title: "Personalized Individual Therapeutic Program",
+    desc: "This program focuses on developing each child’s behavior, communication, and social interaction skills. Every treatment plan is tailored to meet the individual needs of the child.",
+  }
 ];
 
 const SERVICES_PREVIEW = [
@@ -36,7 +36,7 @@ const SERVICES_PREVIEW = [
 const TESTIMONIALS = [
   {
     quote:
-      "St. Stephens changed our lives. Within months of starting therapy, our son began communicating in ways we never imagined.",
+      "St. Stephen's changed our lives. Within months of starting therapy, our son began communicating in ways we never imagined.",
     name: "Adaeze O.",
     role: "Parent",
   },
@@ -59,118 +59,98 @@ export default function Home() {
     <main className="min-h-screen  text-[#1A1A1A] antialiased">
       <Navbar />
       {/* ── HERO SECTION ── */}
-      <section className="relative overflow-hidden pt-30 pb-20 lg:pt-30 lg:pb-32">
-        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-12 items-center">
-          {/* Left Column: Content */}
-          <div className="lg:col-span-6 space-y-8 z-10">
-            <h1 className="text-4xl lg:text-[50px] font-bold tracking-tight text-[#111] leading-[1.1]">
-              Every Autistic Child Deserves a better
-              <br />
-              <span className="text-[#513424] font-normal italic!">
-                {" "}
-                treatment program to Flourish
-              </span>
-            </h1>
-
-            <p className="text-[15px] text-stone-600 max-w-lg leading-relaxed">
-              St. Stephens Family provides different alternatives treatment
-              program designed for each specific individuals with autistic
-              spectrum disorder.
-            </p>
-            <div className="flex flex-wrap gap-4 pt-2">
-              <Link
-                to="/new"
-                className="group px-6 py-3.5 bg-[#513424] text-white font-medium rounded-full hover:bg-[#513424] transition-all duration-200 shadow-sm text-sm inline-flex items-center gap-2"
-              >
-                Talk With Support Assistant
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-              </Link>
-
-              <Link
-                to="/request-therapist"
-                className="px-6 py-3.5 border border-stone-200 text-stone-700 font-medium rounded-full hover:bg-stone-50 transition-all duration-200 text-sm"
-              >
-                Request For Help
-              </Link>
-            </div>
-
-            {/* Meet the Minds Behind Section */}
-            {/* Meet the Minds Behind Section */}
-            <div className="pt-8 border-t border-stone-100">
-              <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-4">
-                Meet the Minds Behind Your Care
-              </p>
-
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-4 overflow-hidden">
-                  {[
-                    // Black female therapist
-                    "https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=400&auto=format&fit=crop",
-
-                    // White male doctor
-                    "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=400&auto=format&fit=crop",
-
-                    // Asian female practitioner
-                    "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=400&auto=format&fit=crop",
-
-                    // Black male medical professional
-                    "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=400&auto=format&fit=crop",
-                  ].map((img, i) => (
-                    <img
-                      key={i}
-                      src={img}
-                      alt="Therapy specialist"
-                      className="h-11 w-11 rounded-full object-cover border-2 border-white shadow-sm hover:scale-105 transition-transform duration-200"
-                    />
-                  ))}
-                </div>
-
-                <button className="h-10 px-4 rounded-full border border-stone-200 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors">
-                  See all →
-                </button>
-              </div>
-            </div>
+  <section className="relative overflow-hidden bg-black text-white min-h-screen flex items-center">
+      {/* Background image */}
+      <img
+        src="https://images.unsplash.com/photo-1651008376811-b90baee60c1f?q=80&w=1600&auto=format&fit=crop"
+        alt="Autism therapy specialist with child"
+        className="absolute inset-0 w-full h-full object-cover opacity-40"
+      />
+ 
+      {/* Gradient overlay — darkens bottom so content reads cleanly */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
+ 
+      {/* Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-40 w-full">
+        <div className="max-w-2xl">
+ 
+          {/* Eyebrow */}
+          <p className="uppercase tracking-[0.3em] text-xs text-stone-300 mb-6 font-medium">
+            St. Stephen's Family Specialist
+          </p>
+ 
+          {/* Headline */}
+          <h1 className="text-4xl lg:text-[54px] md:font-bold leading-[1.1] tracking-tight">
+            Every Autistic Child Deserves to{" "}
+            <span className="italic md:font-normal font-bold text-[#C8A97E]">Flourish</span>
+          </h1>
+ 
+          {/* Sub */}
+          <p className="mt-6 text-[15px] lg:text-[16px] text-stone-300 max-w-xl leading-relaxed">
+            We provide personalised treatment programmes designed for each
+            individual on the autism spectrum, so every child gets the care
+            they truly need.
+          </p>
+ 
+          {/* CTAs */}
+          <div className="flex flex-wrap gap-4 mt-10">
+            <a
+              href="/new"
+              className="group px-6 py-3.5 bg-[#513424] text-white font-medium rounded-full hover:bg-[#6B4530] transition-all duration-200 text-sm inline-flex items-center gap-2 shadow-lg"
+            >
+              Talk With Support Assistant
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            </a>
+            <a
+              href="/request-therapist"
+              className="px-6 py-3.5 border border-white/30 text-white font-medium rounded-full hover:bg-white/10 transition-all duration-200 text-sm backdrop-blur-sm"
+            >
+              Request For Help
+            </a>
           </div>
-
-          {/* Right Column: Visual Component Layout */}
-          <div className="lg:col-span-6 relative flex justify-center lg:justify-end">
-            {/* Main Light Green Wavy Container */}
-            <div className="relative w-full max-w-[480px] aspect-[4/5] bg-[#9e9c9b]/4 rounded-[40px] rounded-tl-[140px] p-8 flex flex-col justify-between overflow-hidden shadow-sm">
-              {/* Social Media Floater left edge */}
-              <div className="absolute left-4 top-1/3 flex flex-col gap-3 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-sm z-20">
-                {["fb", "tw", "ig"].map((s) => (
-                  <span
-                    key={s}
-                    className="w-5 h-5 bg-stone-200 rounded-full block cursor-pointer hover:bg-stone-300 transition-colors"
+ 
+          {/* Service pills */}
+          <div className="flex flex-wrap gap-2 mt-10">
+            {SERVICES_PREVIEW.map((s) => (
+              <span
+                key={s.name}
+                className="px-4 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 text-xs font-medium text-stone-200 rounded-full"
+              >
+                {s.name}
+              </span>
+            ))}
+          </div>
+ 
+          {/* Team avatars */}
+          <div className="pt-10 mt-2 border-t border-white/10">
+            <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-4">
+              Meet the Minds Behind Your Care
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-4 overflow-hidden">
+                {[
+                  "https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=400&auto=format&fit=crop",
+                  "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=400&auto=format&fit=crop",
+                  "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=400&auto=format&fit=crop",
+                  "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=400&auto=format&fit=crop",
+                ].map((img, i) => (
+                  <img
+                    key={i}
+                    src={img}
+                    alt="Therapy specialist"
+                    className="h-11 w-11 rounded-full object-cover border-2 border-white/20 shadow-md hover:scale-105 transition-transform duration-200"
                   />
                 ))}
               </div>
-
-              {/* Main Visual Persona Card Representation */}
-              <div className="w-full h-full bg-stone-100 rounded-3xl rounded-tl-[100px] overflow-hidden relative border border-white/40 flex items-end justify-center">
-                {/* Illustration / Graphic Placeholder (Simulating the doctor photo image context) */}
-                <img
-                  src="https://images.unsplash.com/photo-1651008376811-b90baee60c1f?q=80&w=1200&auto=format&fit=crop"
-                  alt="Autism therapy specialist"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Dynamic Overlay Scatter tags matching the 'Orthopedics/Cardiology' pill layouts */}
-              <div className="absolute bottom-6 left-6 right-6 flex flex-wrap gap-2 justify-center z-10">
-                {SERVICES_PREVIEW.map((s) => (
-                  <span
-                    key={s.name}
-                    className="px-4 py-2 bg-white/95 backdrop-blur-xs text-xs font-medium text-stone-800 rounded-full shadow-xs border border-stone-100 transform hover:scale-105 transition-transform duration-200"
-                  >
-                    {s.name}
-                  </span>
-                ))}
-              </div>
+              <button className="h-10 px-4 rounded-full border border-white/20 text-xs font-medium text-stone-300 hover:bg-white/10 transition-colors backdrop-blur-sm">
+                See all →
+              </button>
             </div>
           </div>
+ 
         </div>
-      </section>
+      </div>
+    </section>
 
       {/* ── WHY CHOOSE US SECTION ── */}
       <section className="py-20 bg-stone-50 border-t border-b border-stone-100">
@@ -256,7 +236,7 @@ export default function Home() {
       </section>
 
       {/* ── PROCESS SECTION ── */}
-      <section className="relative py-24 bg-gradient-to-b from-white to-[#eff1ef] overflow-hidden">
+      <section className="relative py-24 bg-gradient-to-b from-[#eff1ef] to-[#eff1ef] overflow-hidden">
         {/* subtle background glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#C5FF4D]/10 blur-3xl rounded-full pointer-events-none" />
 

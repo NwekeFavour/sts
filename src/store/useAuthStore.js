@@ -2,15 +2,17 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 // ---------------------------------------------------------------------------
-// Base URL — set VITE_API_URL in your .env, e.g. http://localhost:4000/api
+// Base URL — set VITE_API_URL in your .env, e.g. http://localhost:4000
 // ---------------------------------------------------------------------------
 const API = import.meta.env.VITE_API_URL;
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Security model
+//  ✅ localStorage  →  access_token + refresh_token only (opaque JWT strings)
+//  ✅ React state   →  user profile object (re-fetched on every page load)
+//  ❌ Never stored  →  email, name, role, or any PII
 // ---------------------------------------------------------------------------
 
-/** Attach the stored access_token to every authenticated request */
 function authHeaders(token) {
   return {
     "Content-Type": "application/json",
@@ -18,48 +20,101 @@ function authHeaders(token) {
   };
 }
 
-/**
- * Unwrap a fetch response.
- * Throws a plain Error whose .message is the server's { error } string
- * so UI code can do: catch (e) => setError(e.message)
- */
 async function unwrap(res) {
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
   return json;
 }
 
-// Store shape
-//
-//  user     — { id, email, role, name, specialization } | null
-//  session  — { access_token, refresh_token, expires_at } | null
-//  status   — "idle" | "loading" | "error"
-//  error    — string | null
-//
+/**
+ * Decode JWT payload client-side (no signature check — that's the server's job).
+ * Used only to extract `sub` (userId) so we can call /me without storing userId.
+ */
+function decodeToken(token) {
+  if (!token) return null;
+  try {
+    const b64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64.padEnd(b64.length + (4 - (b64.length % 4)) % 4, "=");
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+function getUserIdFromToken(token) {
+  return decodeToken(token)?.sub ?? null;
+}
+
+function isTokenExpired(token) {
+  const payload = decodeToken(token);
+  if (!payload?.exp) return true;
+  return payload.exp * 1000 < Date.now();
+}
+
+// ---------------------------------------------------------------------------
+// Store
+// ---------------------------------------------------------------------------
 
 const useAuthStore = create(
   persist(
     (set, get) => ({
-      // ── State 
-      user: null,
-      session: null,
-      status: "idle",
+      // ── State ──
+      user: null,       // lives in memory only — never persisted
+      session: null,    // { access_token, refresh_token, expires_at } — persisted
+      status: "idle",   // "idle" | "loading" | "error"
       error: null,
 
-      // ── Derived helpers 
-      isAuthenticated: () => !!get().session?.access_token,
-      isAdmin: () => get().user?.role === "admin",
+      // ── Derived 
+      isAuthenticated: () => {
+        const token = get().session?.access_token;
+        return !!token && !isTokenExpired(token);
+      },
+      isAdmin:     () => get().user?.role === "admin",
       isTherapist: () => get().user?.role === "therapist",
-      isPatient: () => get().user?.role === "patient",
+      isPatient:   () => get().user?.role === "patient",
       accessToken: () => get().session?.access_token ?? null,
 
-      // ── Internal setter 
+      // ── Internal ───────────────────────────────────────────────────────────
       _setLoading: () => set({ status: "loading", error: null }),
-      _setError: (msg) => set({ status: "error", error: msg }),
+      _setError:   (msg) => set({ status: "error", error: msg }),
       _clearError: () => set({ error: null }),
 
-      // POST /api/auth/login
-      // Returns: { user, session }
+      // Called on app mount to rehydrate user profile from the server.
+      // Uses the userId decoded from the stored token — nothing extra in localStorage.
+      fetchMe: async () => {
+        const { session } = get();
+        const token = session?.access_token;
+
+        if (!token || isTokenExpired(token)) {
+          // Try refresh before giving up
+          try { await get().refreshToken(); }
+          catch { get().logout(); return null; }
+        }
+
+        const userId = getUserIdFromToken(get().session?.access_token);
+        if (!userId) { get().logout(); return null; }
+
+        get()._setLoading();
+        try {
+          const data = await unwrap(
+            await fetch(`${API}/api/auth/${userId}/me`, {
+              headers: authHeaders(get().accessToken()),
+            })
+          );
+          set({ user: data.user, status: "idle" });
+          return data.user;
+        } catch (err) {
+          if (err.message.includes("401") || err.message.includes("403")) {
+            get().logout();
+          } else {
+            get()._setError(err.message);
+          }
+          return null;
+        }
+      },
+
+      // ── login ──
+      // Persists ONLY the session tokens. User object stays in memory.
       login: async ({ email, password }) => {
         get()._setLoading();
         try {
@@ -71,8 +126,8 @@ const useAuthStore = create(
             })
           );
           set({
-            user: data.user,
-            session: data.session,
+            session: data.session, // ← only tokens hit localStorage
+            user: data.user,       // ← stays in memory via React state
             status: "idle",
             error: null,
           });
@@ -83,40 +138,39 @@ const useAuthStore = create(
         }
       },
 
+      // ── register ───────────────────────────────────────────────────────────
       register: async ({ email, full_name, password }) => {
         get()._setLoading();
         try {
-            const data = await unwrap(
-                await fetch(`${API}/api/auth/register`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, full_name, password }),
-                })
-            );
-            set({
-                user: data.user,
-                session: data.session,
-                status: "idle",
-                error: null,
-            });
-            return data;
+          const data = await unwrap(
+            await fetch(`${API}/api/auth/register`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, full_name, password }),
+            })
+          );
+          set({
+            session: data.session,
+            user: data.user,
+            status: "idle",
+            error: null,
+          });
+          return data;
         } catch (err) {
-            get()._setError(err.message);
-            throw err;
+          get()._setError(err.message);
+          throw err;
         }
       },
 
-      // ── logout
-      // No dedicated endpoint — just clear local state
+      // ── logout ─
+      // Wipes both memory and localStorage cleanly.
       logout: () =>
         set({ user: null, session: null, status: "idle", error: null }),
 
-      // ── refreshToken ───
-      // POST /api/auth/refresh
-      // Returns: { session }
+      // ── refreshToken ───────────────────────────────────────────────────────
       refreshToken: async () => {
         const { session } = get();
-        if (!session?.refresh_token) return;
+        if (!session?.refresh_token) throw new Error("No refresh token");
 
         try {
           const data = await unwrap(
@@ -129,15 +183,12 @@ const useAuthStore = create(
           set({ session: data.session });
           return data.session;
         } catch (err) {
-          // Refresh failed — force logout
           get().logout();
           throw err;
         }
       },
 
-      // ── forgotPassword ─
-      // POST /api/auth/forgot-password
-      // Returns: { message }
+      // ── forgotPassword ─────────────────────────────────────────────────────
       forgotPassword: async ({ email }) => {
         get()._setLoading();
         try {
@@ -156,10 +207,7 @@ const useAuthStore = create(
         }
       },
 
-      // ── resetPassword ──
-      // POST /api/auth/reset-password  (therapist sets password from invite link)
-      // Body: { token, password }
-      // Returns: { message }
+      // ── resetPassword ──────────────────────────────────────────────────────
       resetPassword: async ({ token, password }) => {
         get()._setLoading();
         try {
@@ -178,10 +226,7 @@ const useAuthStore = create(
         }
       },
 
-      // ── inviteTherapist  (admin only) ──────────────────────────────────────
-      // POST /api/auth/invite-therapist
-      // Body: { email, full_name, phone?, specialization? }
-      // Returns: { message, therapist }
+      // ── inviteTherapist (admin only) ───────────────────────────────────────
       inviteTherapist: async ({ email, full_name, phone, specialization }) => {
         get()._setLoading();
         try {
@@ -200,9 +245,7 @@ const useAuthStore = create(
         }
       },
 
-      // ── resendInvite  (admin only) ─────────────────────────────────────────
-      // POST /api/auth/resend-invite/:therapistId
-      // Returns: { message }
+      // ── resendInvite (admin only) ──────────────────────────────────────────
       resendInvite: async (therapistId) => {
         get()._setLoading();
         try {
@@ -221,14 +264,15 @@ const useAuthStore = create(
       },
     }),
 
-    // ── Persist config ────
-    // Only persist user + session — status/error are transient UI state
+    // ── Persist config ─────────────────────────────────────────────────────
+    // Only session tokens are written to localStorage.
+    // `user` is intentionally excluded — it is always fetched fresh via fetchMe().
     {
       name: "ststephens-auth",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        user: state.user,
-        session: state.session,
+        session: state.session, // access_token + refresh_token only
+        // user: intentionally omitted
       }),
     }
   )

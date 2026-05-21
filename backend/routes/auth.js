@@ -9,6 +9,7 @@ const {
   requestPasswordReset,
   resendInvite,
   refreshToken,
+  getMe,
 } = require('../controllers/auth');
 
 const router = express.Router();
@@ -56,6 +57,7 @@ const resetPasswordValidation = [
 ];
 
 // ─── Public routes 
+router.get('/:userId/me', authenticate, getMe)
 
 // POST /api/auth/login
 router.post('/login', loginLimiter, loginValidation, login);

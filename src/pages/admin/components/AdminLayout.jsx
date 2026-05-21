@@ -65,7 +65,7 @@ export default function AdminLayout() {
           onMenuClick={() => setSidebarOpen(true)}
         />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">
+        <main className="flex-1 overflow-y-auto scrollbar-none p-4 sm:p-6 lg:p-7">
           <Outlet />
         </main>
       </div>

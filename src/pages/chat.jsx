@@ -5,7 +5,7 @@ import { useChatStore } from "../store/useChatStore";
 export const STEPHANIE_CHARACTER = {
   name: "Stephanie",
   role: "Support Assistant",
-  centre: "St Stephens Therapy Centre",
+  centre: "St Stephen's Family",
   accentColor: "#4A7C5F",
   traits: [
     { icon: "🌿", label: "Calm & grounding", desc: "Never rushed or overwhelming" },
@@ -28,13 +28,13 @@ export const STEPHANIE_CHARACTER = {
     "Replacing a therapist",
   ],
   greeting:
-    "Hi there 👋 I'm Stephanie, the support assistant for St Stephens Therapy Centre.\n\nI can help with questions about our services, appointments, and how things work here. Please note — I'm not a therapist and can't provide medical advice or diagnoses.\n\nWhat can I help you with today?",
+    "Hi there 👋 I'm Stephanie, the support assistant for St. Stephen's Family.\n\nI can help with questions about our services, appointments, and how things work here. Please note — I'm not a therapist and can't provide medical advice or diagnoses.\n\nWhat can I help you with today?",
 };
 
 
 
 const QUICK_QUESTIONS = [
-  "What services does St Stephens offer?",
+  "What services does St. Stephen's Family offer?",
   "How do I book an appointment?",
   "What should I expect at a first session?",
   "How does the patient portal work?",
@@ -354,7 +354,7 @@ export default function StStephensChatbot() {
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: isMobile ? 13 : 14, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {isMobile ? "Stephanie · St Stephens" : "St Stephens Therapy Centre"}
+              {isMobile ? "Stephanie · St. Stephen's" : "St. Stephen's Family"}
             </div>
             <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>Support chat · Stephanie is available</div>
           </div>
