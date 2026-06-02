@@ -1,91 +1,281 @@
-import { create } from 'zustand'
+// store/adminStore.js
+import { create } from "zustand";
+import useAuthStore from "./useAuthStore";
 
-// ── Seed data ──────────────────────────────────────────────
+const API = import.meta.env.VITE_API_URL;
 
-const REQUESTS = [
-  { id: 'REQ-001', parent: 'Adaeze Okafor',   child: 'Emeka (7)',   email: 'adaeze@email.com',  phone: '+234 801 234 5678', concern: 'Speech delay, social withdrawal',   date: '2025-11-12', status: 'pending',    therapist: null,         location: 'Lagos, NG' },
-  { id: 'REQ-002', parent: 'Ngozi Adeyemi',   child: 'Temi (5)',    email: 'ngozi@email.com',   phone: '+44 7700 900123',   concern: 'Sensory sensitivity, meltdowns',    date: '2025-11-13', status: 'assigned',   therapist: 'Chidi Okonkwo',  location: 'London, UK' },
-  { id: 'REQ-003', parent: 'Fatima Bello',    child: 'Yusuf (9)',   email: 'fatima@email.com',  phone: '+234 802 345 6789', concern: 'Behavioural difficulties at school', date: '2025-11-14', status: 'in-progress',therapist: 'Dr. Ada Nwosu',  location: 'Abuja, NG' },
-  { id: 'REQ-004', parent: 'Kemi Olawale',    child: 'Seun (6)',    email: 'kemi@email.com',    phone: '+1 415 555 0123',   concern: 'Non-verbal, limited eye contact',   date: '2025-11-15', status: 'pending',    therapist: null,         location: 'Houston, US' },
-  { id: 'REQ-005', parent: 'Amaka Eze',       child: 'Chidera (8)', email: 'amaka@email.com',   phone: '+234 803 456 7890', concern: 'Repetitive behaviours, anxiety',    date: '2025-11-16', status: 'completed',  therapist: 'Tolu Adeyemi',   location: 'Enugu, NG' },
-  { id: 'REQ-006', parent: 'Bisi Adegoke',    child: 'Lola (4)',    email: 'bisi@email.com',    phone: '+234 804 567 8901', concern: 'Late talker, hyperactivity',        date: '2025-11-17', status: 'assigned',   therapist: 'Fatima Ibrahim', location: 'Ibadan, NG' },
-  { id: 'REQ-007', parent: 'James Mensah',    child: 'Kwame (10)',  email: 'james@email.com',   phone: '+44 7800 000123',   concern: 'Difficulty with transitions',      date: '2025-11-18', status: 'pending',    therapist: null,         location: 'Manchester, UK' },
-]
+function authHeaders() {
+  // Pull token directly from persisted auth store in localStorage
+  try {
+    const raw = localStorage.getItem("ststephens-auth");
+    const token = raw ? JSON.parse(raw)?.state?.session?.access_token : null;
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  } catch {
+    return { "Content-Type": "application/json" };
+  }
+}
 
-const THERAPISTS = [
-  { id: 'TH-001', name: 'Dr. Ada Nwosu',    role: 'Clinical Director',      cases: 8,  status: 'active',   email: 'ada@ststephensfam.org',    speciality: 'ABA, Assessment',        joined: '2016-01-10', avatar: 'AN' },
-  { id: 'TH-002', name: 'Chidi Okonkwo',    role: 'Lead Therapist',         cases: 12, status: 'active',   email: 'chidi@ststephensfam.org',   speciality: 'Speech & Language',      joined: '2017-03-22', avatar: 'CO' },
-  { id: 'TH-003', name: 'Fatima Ibrahim',   role: 'Training Coordinator',   cases: 6,  status: 'active',   email: 'fatima@ststephensfam.org',  speciality: 'Occupational Therapy',   joined: '2018-07-01', avatar: 'FI' },
-  { id: 'TH-004', name: 'Tolu Adeyemi',     role: 'Therapy Consultant',     cases: 9,  status: 'active',   email: 'tolu@ststephensfam.org',    speciality: 'Behavioural Therapy',    joined: '2019-09-15', avatar: 'TA' },
-  { id: 'TH-005', name: 'Emeka Nwachukwu', role: 'Junior Therapist',       cases: 4,  status: 'training', email: 'emeka@ststephensfam.org',   speciality: 'ABA',                    joined: '2024-01-20', avatar: 'EN' },
-  { id: 'TH-006', name: 'Sola Akinwande',  role: 'Junior Therapist',       cases: 3,  status: 'training', email: 'sola@ststephensfam.org',    speciality: 'Family Support',         joined: '2024-03-10', avatar: 'SA' },
-]
+async function unwrap(res) {
+  const json = await res.json().catch(() => ({}));
 
-const REPORTS = [
-  { id: 'RPT-001', title: 'Monthly Progress Report - Emeka O.',    therapist: 'Chidi Okonkwo',  patient: 'Emeka (7)',   date: '2025-11-10', type: 'progress', size: '1.2 MB', status: 'reviewed' },
-  { id: 'RPT-002', title: 'Initial Assessment - Temi A.',          therapist: 'Chidi Okonkwo',  patient: 'Temi (5)',    date: '2025-11-12', type: 'assessment', size: '842 KB', status: 'pending' },
-  { id: 'RPT-003', title: 'Behavioural Evaluation - Yusuf B.',     therapist: 'Dr. Ada Nwosu',  patient: 'Yusuf (9)',   date: '2025-11-13', type: 'assessment', size: '2.1 MB', status: 'reviewed' },
-  { id: 'RPT-004', title: 'Session Notes - Chidera E. (Week 8)',   therapist: 'Tolu Adeyemi',   patient: 'Chidera (8)', date: '2025-11-15', type: 'notes', size: '310 KB', status: 'reviewed' },
-  { id: 'RPT-005', title: 'Discharge Summary - Chidera E.',        therapist: 'Tolu Adeyemi',   patient: 'Chidera (8)', date: '2025-11-16', type: 'discharge', size: '1.8 MB', status: 'pending' },
-  { id: 'RPT-006', title: 'Occupational Therapy Report - Lola A.', therapist: 'Fatima Ibrahim', patient: 'Lola (4)',    date: '2025-11-17', type: 'progress', size: '960 KB', status: 'pending' },
-]
+  if (!res.ok) {
+    throw new Error(
+      json.message ||
+      json.error ||
+      `HTTP ${res.status}`
+    );
+  }
 
-const FORMS = [
-  { id: 'FRM-001', title: 'Intake Form - Adaeze Okafor',     type: 'intake',    patient: 'Emeka (7)',   sentTo: 'adaeze@email.com', date: '2025-11-12', status: 'submitted' },
-  { id: 'FRM-002', title: 'Behavioural Questionnaire - Kemi', type: 'behaviour', patient: 'Seun (6)',    sentTo: 'kemi@email.com',   date: '2025-11-15', status: 'pending' },
-  { id: 'FRM-003', title: 'Medical History - Fatima Bello',  type: 'medical',   patient: 'Yusuf (9)',   sentTo: 'fatima@email.com', date: '2025-11-14', status: 'submitted' },
-  { id: 'FRM-004', title: 'Intake Form - Bisi Adegoke',      type: 'intake',    patient: 'Lola (4)',    sentTo: 'bisi@email.com',   date: '2025-11-17', status: 'submitted' },
-  { id: 'FRM-005', title: 'Intake Form - James Mensah',      type: 'intake',    patient: 'Kwame (10)',  sentTo: 'james@email.com',  date: '2025-11-18', status: 'pending' },
-]
+  return json;
+}
 
-// ── Store ──────────────────────────────────────────────────
+async function patchStatus(id, status, reason = null) {
+  return unwrap(
+    await fetch(`${API}/api/admin/therapist-application/applications/${id}/${status}`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      ...(reason ? { body: JSON.stringify({ reason }) } : {}),
+    })
+  );
+}
 
 export const useAdminStore = create((set, get) => ({
-  requests:   REQUESTS,
-  therapists: THERAPISTS,
-  reports:    REPORTS,
-  forms:      FORMS,
+  // ── Raw lists (used by sidebar counts) ──────────────────────────────────────
+  requests:   [],
+  therapists: [],
+  reports:    [],
+  forms:      [],
 
-  // Assign therapist to request
-  assignTherapist: (requestId, therapistName) => set(state => ({
-    requests: state.requests.map(r =>
-      r.id === requestId
-        ? { ...r, therapist: therapistName, status: 'assigned' }
-        : r
-    ),
-  })),
+  // ── Dashboard-specific state ─────────────────────────────────────────────────
+  dashboardStats: {
+    pendingRequests: 0,
+    totalRequests:   0,
+    totalCases:      0,
+    activeTherapists:0,
+    pendingReports:  0,
+    pendingForms:    0,
+  },
+  recentRequests: [],
+  activityFeed:   [],
+  dashboardLoading: false,
+  dashboardError:   null,
 
-  // Update request status
-  updateRequestStatus: (requestId, status) => set(state => ({
-    requests: state.requests.map(r =>
-      r.id === requestId ? { ...r, status } : r
-    ),
-  })),
+  // ── fetchDashboard ───────────────────────────────────────────────────────────
+  // Calls GET /api/admin/dashboard — single request for everything the dashboard needs.
+  fetchDashboard: async () => {
+    set({ dashboardLoading: true, dashboardError: null });
+    try {
+      const data = await unwrap(
+        await fetch(`${API}/api/admin/dashboard`, { headers: authHeaders() })
+      );
 
-  // Mark report reviewed
-  markReportReviewed: (reportId) => set(state => ({
-    reports: state.reports.map(r =>
-      r.id === reportId ? { ...r, status: 'reviewed' } : r
-    ),
-  })),
-
-  // Mark form sent
-  markFormSent: (formId) => set(state => ({
-    forms: state.forms.map(f =>
-      f.id === formId ? { ...f, status: 'sent' } : f
-    ),
-  })),
-
-  // Computed helpers
-  getStats: () => {
-    const { requests, therapists, reports, forms } = get()
-    return {
-      pendingRequests:  requests.filter(r => r.status === 'pending').length,
-      activeTherapists: therapists.filter(t => t.status === 'active').length,
-      pendingReports:   reports.filter(r => r.status === 'pending').length,
-      pendingForms:     forms.filter(f => f.status === 'pending').length,
-      totalRequests:    requests.length,
-      totalCases:       requests.filter(r => ['assigned','in-progress'].includes(r.status)).length,
+      set({
+        dashboardStats:  data.stats,
+        recentRequests:  data.recentRequests,
+        activityFeed:    data.activity,
+        // Also hydrate the raw lists so sidebar counts stay accurate
+        therapists:      data.therapists,
+        dashboardLoading: false,
+      });
+    } catch (err) {
+      set({ dashboardError: err.message, dashboardLoading: false });
     }
   },
-}))
+
+  // ── fetchRequests ────────────────────────────────────────────────────────────
+  fetchRequests: async (params = {}) => {
+    try {
+      const qs = new URLSearchParams(params).toString();
+      const data = await unwrap(
+        await fetch(`${API}/api/admin/requests?${qs}`, { headers: authHeaders() })
+      );
+      set({ requests: data.requests });
+      return data;
+    } catch (err) {
+      console.error("[fetchRequests]", err);
+    }
+  },
+
+  // ── assignTherapist ──────────────────────────────────────────────────────────
+  assignTherapist: async (requestId, therapistId) => {
+    const data = await unwrap(
+      await fetch(`${API}/api/admin/requests/${requestId}/assign`, {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: JSON.stringify({ therapist_id: therapistId }),
+      })
+    );
+    // Update local request status
+    set((s) => ({
+      requests: s.requests.map((r) =>
+        r.id === requestId ? { ...r, status: "assigned", therapist_id: therapistId } : r
+      ),
+    }));
+    return data;
+  },
+
+  // ── fetchTherapists ──────────────────────────────────────────────────────────
+  fetchTherapists: async () => {
+    try {
+      const data = await unwrap(
+        await fetch(`${API}/api/admin/therapists`, { headers: authHeaders() })
+      );
+      set({ therapists: data.therapists });
+      return data;
+    } catch (err) {
+      console.error("[fetchTherapists]", err);
+    }
+  },
+
+  // ── fetchReports ─────────────────────────────────────────────────────────────
+  fetchReports: async (params = {}) => {
+    try {
+      const qs = new URLSearchParams(params).toString();
+      const data = await unwrap(
+        await fetch(`${API}/api/admin/reports?${qs}`, { headers: authHeaders() })
+      );
+      set({ reports: data.reports });
+      return data;
+    } catch (err) {
+      console.error("[fetchReports]", err);
+    }
+  },
+
+  // ── reviewReport ─────────────────────────────────────────────────────────────
+  reviewReport: async (reportId) => {
+    const data = await unwrap(
+      await fetch(`${API}/api/admin/reports/${reportId}/review`, {
+        method: "PATCH",
+        headers: authHeaders(),
+      })
+    );
+    set((s) => ({
+      reports: s.reports.map((r) =>
+        r.id === reportId ? { ...r, status: "reviewed" } : r
+      ),
+    }));
+    return data;
+  },
+
+  // ── fetchForms 
+  fetchForms: async (params = {}) => {
+    try {
+      const qs = new URLSearchParams(params).toString();
+      const data = await unwrap(
+        await fetch(`${API}/api/admin/forms?${qs}`, { headers: authHeaders() })
+      );
+      set({ forms: data.forms });
+      return data;
+    } catch (err) {
+      console.error("[fetchForms]", err);
+    }
+  },
+ applications: [],
+  applicationsLoading: false,
+  applicationsError: null,
+ 
+  // GET /api/therapist/applications
+  fetchApplications: async () => {
+    set({ applicationsLoading: true, applicationsError: null });
+    try {
+      const data = await unwrap(
+        await fetch(`${API}/api/admin/therapist-application/applications`, { headers: authHeaders() })
+      );
+      set({ applications: data.data ?? [], applicationsLoading: false });
+    } catch (err) {
+      set({ applicationsError: err.message, applicationsLoading: false });
+    }
+  },
+
+    // GET /api/therapist/all
+  fetchTherapistList: async () => {
+    set({ therapistListLoading: true, therapistListError: null });
+    try {
+      const data = await unwrap(
+        await fetch(`${API}/api/admin/therapist-application/all`, { headers: authHeaders() })
+      );
+      set({ therapistList: data.data ?? [], therapistListLoading: false });
+    } catch (err) {
+      set({ therapistListError: err.message, therapistListLoading: false });
+    }
+  },
+ 
+ 
+  // PATCH /api/therapist/applications/:id/approved
+  approveApplication: async (id, reason) => {
+    const data = await patchStatus(id, "approved", reason || null);
+    set((s) => ({
+      applications: s.applications.map((a) =>
+        a.id === id ? { ...a, status: "approved" } : a
+      ),
+    }));
+    return data;
+  },
+
+    promoteToTherapist: async (id) => {
+    const data = await unwrap(
+      await fetch(`${API}/api/admin/therapist-application/applications/${id}/promote`, {
+        method: "POST",
+        headers: authHeaders(),
+      })
+    );
+    // Move the row from "training/application" to "active/profile" optimistically
+    set(s => ({
+      therapistList: s.therapistList.map(t =>
+        t.id === id
+          ? { ...t, status: "active", source: "profile", application_status: "approved" }
+          : t
+      ),
+    }));
+    return data;
+  },
+ 
+ 
+  // PATCH /api/therapist/applications/:id/rejected
+  rejectApplication: async (id, rejectReason) => {
+    const data = await patchStatus(id, "rejected", rejectReason || null);
+    set((s) => ({
+      applications: s.applications.map((a) =>
+        a.id === id ? { ...a, status: "rejected" } : a
+      ),
+    }));
+    return data;
+  },
+    // PATCH /api/therapist/profile/:id/:status
+  updateTherapistStatus: async (id, status) => {
+    const data = await patchStatus(`/api/admin/therapist-application/profile/${id}/${status}`);
+    set(s => ({
+      therapistList: s.therapistList.map(t => t.id === id ? { ...t, status } : t),
+    }));
+    return data;
+  },
+ 
+  // PATCH /api/therapist/applications/:id/pending
+  resetApplication: async (id, reason) => {
+    const data = await patchStatus(id, "pending", reason || null);
+    set((s) => ({
+      applications: s.applications.map((a) =>
+        a.id === id ? { ...a, status: "pending" } : a
+      ),
+    }));
+    return data;
+  },
+ 
+  // DELETE /api/therapist/applications/:id
+  deleteApplication: async (id) => {
+    await unwrap(
+      await fetch(`${API}/api/admin/therapist-application/applications/${id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      })
+    );
+    set((s) => ({
+      applications: s.applications.filter((a) => a.id !== id),
+    }));
+  },
+ 
+}));
+

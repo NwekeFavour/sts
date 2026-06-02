@@ -226,6 +226,53 @@ const useAuthStore = create(
         }
       },
 
+      therapistApplicationLoading: false,
+      therapistApplicationError: null,
+
+      // ── applyTherapist ──────────────────────────────────────────────────────
+      applyTherapist: async ({
+        fullName,
+        email,
+        phone,
+        qualifications,
+        yearsOfExperience,
+        specialization,
+        licenseNumber,
+        resumeLink,
+        coverLetter,
+      }) => {
+        get()._setLoading();
+        set({ therapistApplicationLoading: true, therapistApplicationError: null });
+        try {
+          const data = await unwrap(
+            await fetch(`${API}/api/therapist/applications`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                fullName,
+                email,
+                phone,
+                qualifications,
+                yearsOfExperience,
+                specialization,
+                licenseNumber,
+                resumeLink,
+                coverLetter,
+              }),
+            })
+          );
+          set({ status: "idle", therapistApplicationLoading: false });
+          return data;
+        } catch (err) {
+          set({
+            status: "error",
+            therapistApplicationLoading: false,
+            therapistApplicationError: err.message,
+          });
+          throw err;
+        }
+      },
+
       // ── inviteTherapist (admin only) ───────────────────────────────────────
       inviteTherapist: async ({ email, full_name, phone, specialization }) => {
         get()._setLoading();

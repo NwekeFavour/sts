@@ -1,75 +1,482 @@
-import { useAdminStore } from "../../../store/adminStore";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ClipboardList,
-  Users,
-  FileText,
-  ClipboardCheck,
-  AlertTriangle,
-  ArrowRight,
-  TrendingUp,
-  Clock,
-  CheckCircle2,
+  ClipboardList, Users, FileText, ClipboardCheck,
+  AlertTriangle, ArrowRight, Clock, CheckCircle2,
+  Trash2, CheckCheck, XCircle, RotateCcw, ChevronDown,
+  Briefcase, Loader2,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useAdminStore } from "../../../store/adminStore";
+import toast from "react-hot-toast";
 
 const STATUS_BADGE = {
-  pending: "bg-amber-100 text-amber-700",
-  assigned: "bg-blue-100 text-blue-700",
+  pending:       "bg-amber-100 text-amber-700",
+  assigned:      "bg-blue-100 text-blue-700",
   "in-progress": "bg-purple-100 text-purple-700",
-  completed: "bg-green-100 text-green-700",
+  completed:     "bg-green-100 text-green-700",
+  cancelled:     "bg-gray-100 text-gray-500",
 };
 
-const ACTIVITY = [
-  {
-    icon: CheckCircle2,
-    color: "text-green-500",
-    msg: "Report uploaded for Chidera E.",
-    time: "2 min ago",
-  },
-  {
-    icon: ClipboardList,
-    color: "text-blue-500",
-    msg: "New request from James Mensah",
-    time: "18 min ago",
-  },
-  {
-    icon: Users,
-    color: "text-purple-500",
-    msg: "Therapist assigned to Temi A.",
-    time: "1 hr ago",
-  },
-  {
-    icon: FileText,
-    color: "text-orange-500",
-    msg: "Intake form submitted by Bisi A.",
-    time: "2 hr ago",
-  },
-  {
-    icon: AlertTriangle,
-    color: "text-red-500",
-    msg: "2 requests awaiting assignment",
-    time: "3 hr ago",
-  },
-];
+const APP_BADGE = {
+  pending:  "bg-amber-100 text-amber-700 border border-amber-200",
+  approved: "bg-green-100 text-green-700 border border-green-200",
+  rejected: "bg-red-100 text-red-600 border border-red-200",
+};
 
-export default function AdminDashboard() {
-  const { requests, therapists, reports, forms } = useAdminStore();
-  const stats = useMemo(
-    () => ({
-      pendingRequests: requests.filter((r) => r.status === "pending").length,
-      totalCases: requests.filter((r) =>
-        ["assigned", "in-progress"].includes(r.status),
-      ).length,
-      activeTherapists: therapists.filter((t) => t.status === "active").length,
-      pendingReports: reports.filter((r) => r.status === "pending").length,
-      pendingForms: forms.filter((f) => f.status === "pending").length,
-      totalRequests: requests.length,
-    }),
-    [requests, therapists, reports, forms],
+const EVENT_ICON = {
+  report_uploaded:    { icon: CheckCircle2,  color: "text-green-500"  },
+  request_created:    { icon: ClipboardList, color: "text-blue-500"   },
+  therapist_assigned: { icon: Users,         color: "text-purple-500" },
+  form_submitted:     { icon: FileText,      color: "text-orange-500" },
+};
+const DEFAULT_EVENT = { icon: AlertTriangle, color: "text-red-500" };
+
+function ConfirmDialog({ open, title, description, onConfirm, onCancel, danger, loading, showReasonField =false, reasonValue, onReasonChange }) {
+  if (!open) return null;
+
+  const confirmLabel = loading
+    ? danger ? "Deleting…" : "Saving…"
+    : danger ? "Yes, delete" : "Confirm";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full space-y-4">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${danger ? "bg-red-50" : "bg-amber-50"}`}>
+          <AlertTriangle size={18} className={danger ? "text-red-500" : "text-amber-500"} />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-gray-900">{title}</p>
+          <p className="text-xs text-gray-500 mt-1 leading-relaxed">{description}</p>
+        </div>
+        {showReasonField && (
+          <div className="space-y-2 flex flex-col">
+            <label className="text-sm font-medium text-gray-700">Reason for rejection</label>
+            <textarea
+              value={reasonValue}
+              onChange={(e) => onReasonChange(e.target.value)}
+              placeholder="Optional: reason for rejection (sent to applicant)"
+              className="border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring focus:ring-slate-500"
+            />
+          </div>
+        )}
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            className="flex-1 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className={`flex-1 py-2 rounded-xl text-xs font-semibold text-white transition disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 ${
+              danger ? "bg-red-500 hover:bg-red-600" : "bg-[#E8890C] hover:opacity-90"
+            }`}
+          >
+            {loading && <Loader2 size={12} className="animate-spin" />}
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+// ── Application filter pill ───────────────────────────────────────────────────
+function FilterPill({ active, label, count, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+        active
+          ? "bg-[#E8890C] text-white border-[#E8890C]"
+          : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+      }`}
+    >
+      {label}
+      {count != null && (
+        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${active ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"}`}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// ── Applications section ──────────────────────────────────────────────────────
+function ApplicationsSection() {
+  const {
+    applications,
+    applicationsLoading,
+    applicationsError,
+    fetchApplications,
+    approveApplication,
+    rejectApplication,
+    resetApplication,
+    deleteApplication,
+  } = useAdminStore();
+
+  const [filter, setFilter]         = useState("all");
+  const [expanded, setExpanded]     = useState(null);   // expanded row id
+  const [actionLoading, setAction]  = useState(null);   // { id, type }
+  const [confirm, setConfirm]       = useState(null);   // { id, type }
+  const [rejectReason, setRejectReason] = useState("");
+
+  useEffect(() => { fetchApplications(); }, []);
+
+  const counts = useMemo(() => ({
+    all:      applications.length,
+    pending:  applications.filter(a => a.status === "pending").length,
+    approved: applications.filter(a => a.status === "approved").length,
+    rejected: applications.filter(a => a.status === "rejected").length,
+  }), [applications]);
+
+  const filtered = useMemo(() =>
+    filter === "all" ? applications : applications.filter(a => a.status === filter),
+    [applications, filter]
   );
 
-  const STAT_CARDS = [
+  async function runAction(id, type) {
+    setAction({ id, type });
+    try {
+      if (type === "approve") await approveApplication(id);
+      else if (type === "reject") await rejectApplication(id, rejectReason);
+      else if (type === "reset")  await resetApplication(id);
+      else if (type === "delete") await deleteApplication(id);
+
+      toast.success("Application updated successfully");
+    } catch (err) {
+      toast.error(err.message || "Something went wrong");
+    } finally {
+      setAction(null);
+      setConfirm(null);
+      setRejectReason("");
+    }
+  }
+
+  function isLoading(id, type) {
+    return actionLoading?.id === id && actionLoading?.type === type;
+  }
+
+  const FILTERS = [
+    { key: "all",      label: "All"      },
+    { key: "pending",  label: "Pending"  },
+    { key: "approved", label: "Approved" },
+    { key: "rejected", label: "Rejected" },
+  ];
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 border-b border-gray-50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-[#FEF3E0] flex items-center justify-center">
+            <Briefcase size={15} className="text-[#E8890C]" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-gray-900">Therapist Applications</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{counts.pending} pending review</p>
+          </div>
+        </div>
+        {/* Filter pills */}
+        <div className="flex flex-wrap gap-2">
+          {FILTERS.map(f => (
+            <FilterPill
+              key={f.key}
+              active={filter === f.key}
+              label={f.label}
+              count={counts[f.key]}
+              onClick={() => setFilter(f.key)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Body */}
+      {applicationsLoading ? (
+        <div className="flex items-center justify-center py-14 gap-2 text-xs text-gray-400">
+          <Loader2 size={16} className="animate-spin" /> Loading applications…
+        </div>
+      ) : applicationsError ? (
+        <div className="flex flex-col items-center py-14 gap-3 text-center">
+          <AlertTriangle size={24} className="text-red-400" />
+          <p className="text-xs text-gray-500">{applicationsError}</p>
+          <button onClick={fetchApplications} className="text-xs font-semibold text-[#E8890C] hover:underline">
+            Retry
+          </button>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center py-14 gap-2 text-center">
+          <Briefcase size={24} className="text-gray-200" />
+          <p className="text-xs text-gray-400">No {filter === "all" ? "" : filter} applications</p>
+        </div>
+      ) : (
+        <>
+          {/* ── Desktop table ── */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full min-w-[700px]">
+              <thead>
+                <tr className="bg-gray-50/60">
+                  {["Applicant", "Contact", "Specialization", "Experience", "Status", "Actions"].map(h => (
+                    <th key={h} className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-5 py-3">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(app => (
+                  <>
+                    <tr
+                      key={app.id}
+                      className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer"
+                      onClick={() => setExpanded(expanded === app.id ? null : app.id)}
+                    >
+                      <td className="px-5 py-3.5">
+                        <p className="text-sm font-semibold text-gray-800">{app.full_name}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">#{String(app.id).slice(0, 8)}</p>
+                      </td>
+                      <td className="px-3 py-3.5">
+                        <p className="text-xs text-gray-700">{app.email}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{app.phone}</p>
+                      </td>
+                      <td className="px-3 py-3.5 text-xs text-gray-500">
+                        {app.specialization || <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="px-3 py-3.5 text-xs text-gray-500">
+                        {app.years_of_experience ? `${app.years_of_experience} yrs` : <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="px-3 py-3.5">
+                        <span className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${APP_BADGE[app.status]}`}>
+                          {app.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                          {app.status !== "approved" && (
+                            <button
+                              title="Approve"
+                              disabled={!!actionLoading}
+                              onClick={() => setConfirm({ id: app.id, type: "approve" })}
+                              className="w-7 h-7 rounded-lg bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition disabled:opacity-40"
+                            >
+                              {isLoading(app.id, "approve") ? <Loader2 size={12} className="animate-spin" /> : <CheckCheck size={13} />}
+                            </button>
+                          )}
+                          {app.status !== "rejected" && (
+                            <button
+                              title="Reject"
+                              disabled={!!actionLoading}
+                              onClick={() => setConfirm({ id: app.id, type: "reject"  })}
+                              className="w-7 h-7 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition disabled:opacity-40"
+                            >
+                              {isLoading(app.id, "reject") ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={13} />}
+                            </button>
+                          )}
+                          {app.status !== "pending" && (
+                            <button
+                              title="Reset to pending"
+                              disabled={!!actionLoading}
+                              onClick={() => setConfirm({ id: app.id, type: "reset" })}
+                              className="w-7 h-7 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center hover:bg-amber-100 transition disabled:opacity-40"
+                            >
+                              {isLoading(app.id, "reset") ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                            </button>
+                          )}
+                          <button
+                            title="Delete"
+                            disabled={!!actionLoading}
+                            onClick={() => setConfirm({ id: app.id, type: "delete" })}
+                            className="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition disabled:opacity-40"
+                          >
+                            {isLoading(app.id, "delete") ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                          </button>
+                          <ChevronDown
+                            size={13}
+                            className={`text-gray-300 transition-transform ${expanded === app.id ? "rotate-180" : ""}`}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Expanded detail row */}
+                    {expanded === app.id && (
+                      <tr key={`${app.id}-detail`} className="bg-gray-50/40">
+                        <td colSpan={6} className="px-5 py-4">
+                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                            <Detail label="Qualifications" value={app.qualifications} />
+                            <Detail label="License Number" value={app.license_number} />
+                            <Detail label="Resume" value={app.resume_link} isLink />
+                            <Detail label="Cover Letter" value={app.cover_letter} wide />
+                            <Detail label="Submitted" value={app.created_at ? new Date(app.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null} />
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ── Mobile cards ── */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {filtered.map(app => (
+              <div key={app.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{app.full_name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{app.email}</p>
+                    <p className="text-[10px] text-gray-400">{app.phone}</p>
+                  </div>
+                  <span className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-full capitalize flex-shrink-0 ${APP_BADGE[app.status]}`}>
+                    {app.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Detail label="Specialization" value={app.specialization} />
+                  <Detail label="Experience" value={app.years_of_experience ? `${app.years_of_experience} yrs` : null} />
+                </div>
+
+                {/* Expandable on mobile */}
+                <button
+                  onClick={() => setExpanded(expanded === app.id ? null : app.id)}
+                  className="flex items-center gap-1 text-[11px] text-gray-400 font-medium"
+                >
+                  <ChevronDown size={12} className={`transition-transform ${expanded === app.id ? "rotate-180" : ""}`} />
+                  {expanded === app.id ? "Less detail" : "More detail"}
+                </button>
+
+                {expanded === app.id && (
+                  <div className="space-y-2 pt-1 border-t border-gray-100">
+                    <Detail label="Qualifications" value={app.qualifications} />
+                    <Detail label="License" value={app.license_number} />
+                    <Detail label="Resume" value={app.resume_link} isLink />
+                    <Detail label="Cover Letter" value={app.cover_letter} />
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {app.status !== "approved" && (
+                    <ActionBtn
+                      label="Approve" icon={<CheckCheck size={11} />}
+                      loading={isLoading(app.id, "approve")}
+                      disabled={!!actionLoading}
+                      className="bg-green-50 text-green-700 border-green-200"
+                      onClick={() => setConfirm({ id: app.id, type: "approve" })}
+                    />
+                  )}
+                  {app.status !== "rejected" && (
+                    <ActionBtn
+                      label="Reject" icon={<XCircle size={11} />}
+                      loading={isLoading(app.id, "reject")}
+                      disabled={!!actionLoading}
+                      className="bg-red-50 text-red-600 border-red-200"
+                      onClick={() => setConfirm({ id: app.id, type: "reject" })}
+                    />
+                  )}
+                  {app.status !== "pending" && (
+                    <ActionBtn
+                      label="Reset" icon={<RotateCcw size={11} />}
+                      loading={isLoading(app.id, "reset")}
+                      disabled={!!actionLoading}
+                      className="bg-amber-50 text-amber-600 border-amber-200"
+                      onClick={() => setConfirm({ id: app.id, type: "reset" })}
+                    />
+                  )}
+                  <ActionBtn
+                    label="Delete" icon={<Trash2 size={11} />}
+                    loading={isLoading(app.id, "delete")}
+                    disabled={!!actionLoading}
+                    className="bg-gray-100 text-gray-500 border-gray-200"
+                    onClick={() => setConfirm({ id: app.id, type: "delete" })}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Confirm dialog */}
+      <ConfirmDialog
+        open={!!confirm}
+        danger={confirm?.type === "delete"}
+        loading={!!actionLoading} 
+        title={
+          confirm?.type === "delete"  ? "Delete application?"  :
+          confirm?.type === "approve" ? "Approve application?" :
+          confirm?.type === "reject"  ? "Reject application?"  :
+          "Reset to pending?"
+        }
+        description={
+          confirm?.type === "delete"
+            ? "This will permanently remove the application. This cannot be undone."
+            : confirm?.type === "approve"
+            ? "The applicant will be notified and their account will be created."
+            : confirm?.type === "reject"
+            ? "The applicant will be marked as rejected. You can undo this later."
+            : "This will move the application back to pending review."
+        }
+        showReasonField={confirm?.type === "reject"}
+        reasonValue={rejectReason}
+        onReasonChange={setRejectReason}
+
+        onConfirm={() => confirm && runAction(confirm.id, confirm.type)}
+        onCancel={() => setConfirm(null)}
+      />
+    </div>
+  );
+}
+
+function Detail({ label, value, isLink, wide }) {
+  return (
+    <div className={wide ? "sm:col-span-2" : ""}>
+      <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">{label}</p>
+      {isLink && value ? (
+        <a href={value} target="_blank" rel="noreferrer" className="text-xs text-[#E8890C] hover:underline mt-0.5 block truncate">
+          View document ↗
+        </a>
+      ) : (
+        <p className="text-xs text-gray-700 mt-0.5">{value || <span className="text-gray-300">—</span>}</p>
+      )}
+    </div>
+  );
+}
+
+function ActionBtn({ label, icon, loading, disabled, className, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-semibold transition disabled:opacity-40 ${className}`}
+    >
+      {loading ? <Loader2 size={11} className="animate-spin" /> : icon}
+      {label}
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main dashboard
+// ─────────────────────────────────────────────────────────────────────────────
+export default function AdminDashboard() {
+  const {
+    dashboardStats: stats,
+    recentRequests,
+    therapists,
+    activityFeed,
+    dashboardLoading,
+    dashboardError,
+    fetchDashboard,
+  } = useAdminStore();
+
+  useEffect(() => { fetchDashboard(); }, []);
+
+  const STAT_CARDS = useMemo(() => [
     {
       label: "Pending Requests",
       value: stats.pendingRequests,
@@ -113,39 +520,64 @@ export default function AdminDashboard() {
       alertMsg: "Parents not yet responded",
       link: "/admin/forms",
     },
-  ];
+  ], [stats]);
 
-  const recentRequests = requests.slice(0, 5);
+  if (dashboardLoading) {
+    return (
+      <div className="space-y-7 animate-pulse">
+        <div className="h-14 bg-gray-100 rounded-2xl" />
+        <div className="grid lg:grid-cols-4 md:grid-cols-2 grid-cols-1 gap-5">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-44 bg-gray-100 rounded-2xl" />)}
+        </div>
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 h-72 bg-gray-100 rounded-2xl" />
+          <div className="h-72 bg-gray-100 rounded-2xl" />
+        </div>
+        <div className="h-48 bg-gray-100 rounded-2xl" />
+        <div className="h-64 bg-gray-100 rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (dashboardError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+        <AlertTriangle size={32} className="text-red-400" />
+        <p className="text-sm font-semibold text-gray-700">Failed to load dashboard</p>
+        <p className="text-xs text-gray-400">{dashboardError}</p>
+        <button
+          onClick={() => fetchDashboard()}
+          className="px-4 py-2 bg-[#E8890C] text-white text-xs font-semibold rounded-full hover:opacity-90 transition-all"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-7">
+
       {/* Alert banner */}
       {stats.pendingRequests > 0 && (
-        <div className="bg-amber-50 border border-[#dadada] rounded-2xl px-5 py-4 lg:flex flex-1 items-end space-y-3 items-center justify-between">
+        <div className="bg-amber-50 border border-[#dadada] rounded-2xl px-5 py-4 lg:flex items-center justify-between space-y-3 lg:space-y-0">
           <div className="flex items-center gap-3">
             <AlertTriangle size={18} className="text-amber-500 flex-shrink-0" />
             <div>
               <p className="text-sm font-semibold text-amber-800">
-                {stats.pendingRequests} request
-                {stats.pendingRequests > 1 ? "s" : ""} awaiting therapist
-                assignment
+                {stats.pendingRequests} request{stats.pendingRequests > 1 ? "s" : ""} awaiting therapist assignment
               </p>
-              <p className="text-xs text-[#181616] mt-0.5">
-                Assign therapists to avoid delays in care
-              </p>
+              <p className="text-xs text-[#181616] mt-0.5">Assign therapists to avoid delays in care</p>
             </div>
           </div>
-          <Link
-            to="/admin/requests"
-            className="text-xs lg:w-fit w-full lg:justify-start justify-end font-semibold text-amber-700 flex items-center gap-1 hover:underline"
-          >
+          <Link to="/admin/requests" className="text-xs font-semibold text-amber-700 flex items-center gap-1 hover:underline">
             Review now <ArrowRight size={13} />
           </Link>
         </div>
       )}
 
       {/* Stat cards */}
-      <div className="grid lg:grid-cols-4 grid-cols-1 md:grid-cols-2  gap-5">
+      <div className="grid lg:grid-cols-4 md:grid-cols-2 grid-cols-1 gap-5">
         {STAT_CARDS.map((card) => (
           <Link
             key={card.label}
@@ -155,9 +587,7 @@ export default function AdminDashboard() {
             }`}
           >
             <div className="flex flex-wrap space-y-2 items-start justify-between mb-4">
-              <div
-                className={`w-10 h-10 rounded-xl ${card.color} flex items-center justify-center`}
-              >
+              <div className={`w-10 h-10 rounded-xl ${card.color} flex items-center justify-center`}>
                 <card.icon size={18} />
               </div>
               {card.alert && (
@@ -166,101 +596,58 @@ export default function AdminDashboard() {
                 </span>
               )}
             </div>
-            <p className="text-3xl font-bold text-gray-900 mb-1">
-              {card.value}
-            </p>
+            <p className="text-3xl font-bold text-gray-900 mb-1">{card.value ?? 0}</p>
             <p className="text-sm font-semibold text-gray-700">{card.label}</p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {card.alert ? card.alertMsg : card.total}
-            </p>
+            <p className="text-xs text-gray-400 mt-0.5">{card.alert ? card.alertMsg : card.total}</p>
           </Link>
         ))}
       </div>
 
-      {/* Main content: Recent requests + Activity feed */}
-      <div className="grid lg:grid-cols-3 grid-cols-1  lg:justfify-start justify-center grid-cols-1 gap-6">
-        {/* Recent requests table */}
+      {/* Main grid: requests + activity */}
+      <div className="grid lg:grid-cols-3 grid-cols-1 gap-6">
+
+        {/* Recent requests */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 sm:px-6 py-4 border-b border-gray-50">
             <div>
-              <h2 className="text-sm font-bold text-gray-900">
-                Recent Requests
-              </h2>
-
-              <p className="text-xs text-gray-400 mt-0.5">
-                Latest therapy intake submissions
-              </p>
+              <h2 className="text-sm font-bold text-gray-900">Recent Requests</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Latest therapy intake submissions</p>
             </div>
-
-            <Link
-              to="/admin/requests"
-              className="text-xs font-semibold text-[#E8890C] flex items-center justify-end gap-1 hover:underline"
-            >
+            <Link to="/admin/requests" className="text-xs font-semibold text-[#E8890C] flex items-center justify-end gap-1 hover:underline">
               View all <ArrowRight size={12} />
             </Link>
           </div>
 
-          {/* Desktop Table */}
+          {/* Desktop table */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full min-w-[700px]">
+            <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="bg-gray-50/60">
-                  <th className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-6 py-3">
-                    Parent / Child
-                  </th>
-
-                  <th className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 py-3">
-                    Location
-                  </th>
-
-                  <th className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 py-3">
-                    Date
-                  </th>
-
-                  <th className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 py-3">
-                    Status
-                  </th>
-
-                  <th className="px-4 py-3"></th>
+                  {["Parent / Child","Location","Date","Status",""].map((h) => (
+                    <th key={h} className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-4 lg:px-6 py-3">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-
               <tbody>
-                {recentRequests.map((req) => (
-                  <tr
-                    key={req.id}
-                    className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors"
-                  >
-                    <td className="px-6 py-3.5">
-                      <p className="text-sm font-semibold text-gray-800">
-                        {req.parent}
-                      </p>
-
+                {recentRequests.length === 0 ? (
+                  <tr><td colSpan={5} className="text-center text-xs text-gray-400 py-10">No requests yet</td></tr>
+                ) : recentRequests.map((req) => (
+                  <tr key={req.id} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
+                    <td className="px-4 lg:px-6 py-3.5">
+                      <p className="text-sm font-semibold text-gray-800">{req.parent}</p>
                       <p className="text-xs text-gray-400">{req.child}</p>
                     </td>
-
-                    <td className="px-3 py-3.5 text-xs text-gray-500">
-                      {req.location}
-                    </td>
-
-                    <td className="px-3 py-3.5 text-xs text-gray-500">
-                      {req.date}
-                    </td>
-
+                    <td className="px-3 py-3.5 text-xs text-gray-500">{req.location}</td>
+                    <td className="px-3 py-3.5 text-xs text-gray-500">{req.date}</td>
                     <td className="px-3 py-3.5">
-                      <span
-                        className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${STATUS_BADGE[req.status]}`}
-                      >
+                      <span className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${STATUS_BADGE[req.status] ?? "bg-gray-100 text-gray-500"}`}>
                         {req.status.replace("-", " ")}
                       </span>
                     </td>
-
                     <td className="px-4 py-3.5">
-                      <Link
-                        to="/admin/requests"
-                        className="text-[10px] font-semibold text-gray-400 hover:text-[#E8890C] transition-colors"
-                      >
+                      <Link to="/admin/requests" className="text-[10px] font-semibold text-gray-400 hover:text-[#E8890C] transition-colors">
                         View →
                       </Link>
                     </td>
@@ -270,48 +657,32 @@ export default function AdminDashboard() {
             </table>
           </div>
 
-          {/* Mobile Cards */}
+          {/* Mobile cards */}
           <div className="md:hidden divide-y divide-gray-100">
-            {recentRequests.map((req) => (
+            {recentRequests.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-6">No activity yet</p>
+            ) :recentRequests.map((req) => (
               <div key={req.id} className="p-4 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-gray-800">
-                      {req.parent}
-                    </p>
-
+                    <p className="text-sm font-semibold text-gray-800">{req.parent}</p>
                     <p className="text-xs text-gray-400 mt-1">{req.child}</p>
                   </div>
-
-                  <span
-                    className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${STATUS_BADGE[req.status]}`}
-                  >
+                  <span className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${STATUS_BADGE[req.status]}`}>
                     {req.status.replace("-", " ")}
                   </span>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                      Location
-                    </p>
-
+                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Location</p>
                     <p className="text-xs text-gray-600 mt-1">{req.location}</p>
                   </div>
-
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                      Date
-                    </p>
-
+                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Date</p>
                     <p className="text-xs text-gray-600 mt-1">{req.date}</p>
                   </div>
                 </div>
-
-                <Link
-                  to="/admin/requests"
-                  className="inline-flex text-xs font-semibold text-[#E8890C] hover:underline"
-                >
+                <Link to="/admin/requests" className="inline-flex text-xs font-semibold text-[#E8890C] hover:underline">
                   View Request →
                 </Link>
               </div>
@@ -326,83 +697,68 @@ export default function AdminDashboard() {
             <p className="text-xs text-gray-400 mt-0.5">Latest system events</p>
           </div>
           <div className="p-5 space-y-4">
-            {ACTIVITY.map((a, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className={`mt-0.5 flex-shrink-0 ${a.color}`}>
-                  <a.icon size={15} />
+            {activityFeed.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-6">No activity yet</p>
+            ) : activityFeed.map((a) => {
+              const { icon: Icon, color } = EVENT_ICON[a.eventType] ?? DEFAULT_EVENT;
+              return (
+                <div key={a.id} className="flex items-start gap-3">
+                  <div className={`mt-0.5 flex-shrink-0 ${color}`}><Icon size={15} /></div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-700 leading-snug">{a.message}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1">
+                      <Clock size={9} /> {a.time}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-700 leading-snug">
-                    {a.msg}
-                  </p>
-                  <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1">
-                    <Clock size={9} /> {a.time}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
+
+      {/* ── Applications section ── */}
+      <ApplicationsSection />
 
       {/* Therapist snapshot */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 border-b border-gray-50">
           <div>
-            <h2 className="text-sm font-bold text-gray-900">
-              Therapist Overview
-            </h2>
+            <h2 className="text-sm font-bold text-gray-900">Therapist Overview</h2>
             <p className="text-xs text-gray-400 mt-0.5">Active caseloads</p>
           </div>
-
-          <Link
-            to="/admin/therapists"
-            className="text-xs font-semibold text-[#E8890C] flex items-center gap-1 hover:underline"
-          >
+          <Link to="/admin/therapists" className="text-xs font-semibold text-[#E8890C] flex items-center gap-1 hover:underline">
             Manage <ArrowRight size={12} />
           </Link>
         </div>
-
-        {/* Responsive Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 divide-y sm:divide-y-0 xl:divide-x divide-gray-50">
-          {therapists
-            .filter((t) => t.status === "active")
-            .map((t) => (
-              <div key={t.id} className="px-4 sm:px-6 py-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FEF3E0] to-[#F4A832] flex items-center justify-center text-[#5C3010] text-xs font-bold flex-shrink-0">
-                    {t.avatar}
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-gray-800 leading-tight truncate">
-                      {t.name}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">{t.role}</p>
-                  </div>
+          {therapists.filter(t => t.status === 'active').length === 0 ? (
+            <div className="col-span-4 text-center text-xs text-gray-400 py-10">No active therapists</div>
+          ) : therapists.filter(t => t.status === 'active').map((t) => (
+            <div key={t.id} className="px-4 sm:px-6 py-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FEF3E0] to-[#F4A832] flex items-center justify-center text-[#5C3010] text-xs font-bold flex-shrink-0">
+                  {t.avatar}
                 </div>
-
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {t.cases}
-                    </p>
-                    <p className="text-[11px] text-gray-400">active cases</p>
-                  </div>
-
-                  <div className="flex-1 max-w-[90px] h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#E8890C] rounded-full"
-                      style={{
-                        width: `${Math.min(100, (t.cases / 15) * 100)}%`,
-                      }}
-                    />
-                  </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-800 leading-tight truncate">{t.name}</p>
+                  <p className="text-xs text-gray-400 truncate">{t.role}</p>
                 </div>
               </div>
-            ))}
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{t.cases}</p>
+                  <p className="text-[11px] text-gray-400">active cases</p>
+                </div>
+                <div className="flex-1 max-w-[90px] h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#E8890C] rounded-full" style={{ width: `${Math.min(100, (t.cases / 15) * 100)}%` }} />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+
     </div>
   );
 }

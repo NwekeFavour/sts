@@ -161,7 +161,7 @@ export default function AdminRequests() {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="font-bold text-gray-900">Assign Therapist</h3>
-                <p className="text-xs text-gray-400 mt-0.5">For {assignModal.parent} — {assignModal.child}</p>
+                <p className="text-xs text-gray-400 mt-0.5">For {assignModal.parent} - {assignModal.child}</p>
               </div>
               <button onClick={() => setAssignModal(null)} className="p-2 hover:bg-gray-100 rounded-xl">
                 <X size={16} />

@@ -62,7 +62,7 @@ export default function Home() {
   <section className="relative overflow-hidden bg-black text-white min-h-screen flex items-center">
       {/* Background image */}
       <img
-        src="https://images.unsplash.com/photo-1651008376811-b90baee60c1f?q=80&w=1600&auto=format&fit=crop"
+        src="https://images.pexels.com/photos/8654039/pexels-photo-8654039.jpeg?auto=compress&cs=tinysrgb&w=1600"
         alt="Autism therapy specialist with child"
         className="absolute inset-0 w-full h-full object-cover opacity-40"
       />
@@ -71,7 +71,7 @@ export default function Home() {
       <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
  
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 py-32 lg:py-40 w-full">
+      <div className="relative z-10 max-w-dvw mx-auto px-6 lg:px-12 py-32 lg:py-40 w-full">
         <div className="max-w-2xl">
  
           {/* Eyebrow */}
@@ -339,10 +339,10 @@ export default function Home() {
             </div>
             <div className="lg:col-span-4 lg:text-right relative z-10">
               <Link
-                to="/services#training"
+                to="/apply-therapist"
                 className="inline-block px-6 py-3.5 bg-[#C5FF4D] text-black font-semibold rounded-full hover:bg-[#b5f03d] transition-colors text-sm"
               >
-                Explore Training Programme →
+                Apply to Become a Therapist →
               </Link>
             </div>
             {/* Soft decorative ambient glow */}

@@ -17,6 +17,10 @@ import NotFound from "./pages/not-found";
 import StStephensChatbot from "./pages/chat";
 import ResetPassword from "./pages/resetP";
 import ForgotPassword from "./pages/fpassword";
+import OurProcess from "./pages/process";
+import PaymentPage from "./pages/uploadReciept";
+import ApplyTherapist from "./pages/applyTherapist";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -27,7 +31,9 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/services" element={<Services />} />
         <Route path="/about-us" element={<AboutUs />} />
-
+        <Route path="/how-it-works" element={<OurProcess />} />
+        <Route path="/payment" element={<PaymentPage />} />
+        <Route path="/apply-therapist" element={<ApplyTherapist />} />
         {/* protected routes */}
         <Route path="/login" element={<AuthPages />} />
         <Route path="/invite/reset-password" element={<ResetPassword />} />
@@ -48,6 +54,17 @@ function App() {
         <Route path="*" element={<NotFound />} />
         <Route path="/new" element={<StStephensChatbot/>}/>
       </Routes>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            borderRadius: "8px",
+            background: "#333",
+            color: "#fff",
+          },
+        }}
+      />
     </>
   );
 }

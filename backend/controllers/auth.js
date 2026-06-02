@@ -3,7 +3,7 @@ const { validationResult } = require('express-validator');
 const crypto = require("crypto");
 const { sendTherapistInviteEmail, sendPasswordResetEmail } = require('../utils/mail');
 
-// ─── Admin: create therapist & send invite ────────────────────────────────────
+// ─── Admin: create therapist & send invite 
 
 async function inviteTherapist(req, res) {
   const errors = validationResult(req);
@@ -135,7 +135,7 @@ if (profileUpdateError || !updatedProfile) {
   }
 }
 
-// ─── Any user: login ───────────────────────────────────────────────────────────
+// ─── Any user: login ───────────────────────
 
 
 async function revokeUserSessions(userId) {
@@ -275,7 +275,7 @@ async function getMe(req, res) {
   }
 };
 
-// ─── Any user: request password reset ────────────────────────────────────────
+// ─── Any user: request password reset ────
 
 async function requestPasswordReset(req, res) {
   const { email } = req.body;
@@ -312,7 +312,7 @@ async function requestPasswordReset(req, res) {
   }
 }
 
-// ─── Admin: resend invite to therapist ────────────────────────────────────────
+// ─── Admin: resend invite to therapist ────
 
 async function resendInvite(req, res) {
   const { therapistId } = req.params;
@@ -352,7 +352,7 @@ async function resendInvite(req, res) {
   }
 }
 
-// ─── Token refresh ─────────────────────────────────────────────────────────────
+// ─── Token refresh ─────────────────────────
 
 async function refreshToken(req, res) {
   const { refresh_token } = req.body;

@@ -2,7 +2,7 @@ import { Bell, Settings, CheckCircle2, Clock, AlertTriangle } from 'lucide-react
 
 const NOTIFS = [
   { icon: AlertTriangle, color: 'text-amber-500 bg-amber-50', msg: 'New therapy request from James Mensah (Manchester, UK)', time: '18 min ago', unread: true },
-  { icon: CheckCircle2,  color: 'text-green-500 bg-green-50',  msg: 'Report uploaded: Discharge Summary — Chidera E. by Tolu Adeyemi', time: '2 hr ago', unread: true },
+  { icon: CheckCircle2,  color: 'text-green-500 bg-green-50',  msg: 'Report uploaded: Discharge Summary, Chidera E. by Tolu Adeyemi', time: '2 hr ago', unread: true },
   { icon: Bell,          color: 'text-blue-500 bg-blue-50',    msg: 'Fatima Ibrahim assigned to case REQ-006 (Lola A.)', time: '3 hr ago', unread: true },
   { icon: CheckCircle2,  color: 'text-green-500 bg-green-50',  msg: 'Intake form submitted by Bisi Adegoke', time: '5 hr ago', unread: false },
   { icon: Clock,         color: 'text-gray-500 bg-gray-50',    msg: 'Reminder: 2 forms still awaiting parent response', time: '1 day ago', unread: false },

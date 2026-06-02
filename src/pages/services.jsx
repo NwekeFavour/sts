@@ -6,49 +6,57 @@ const SERVICES = [
   {
     number: "01",
     title: "Behavioural Therapy",
-    desc: "Helping children develop positive behaviours, communication skills, emotional regulation, and independence through evidence-based interventions.",
-    image:
-      "https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200&auto=format&fit=crop",
+    tag: "Core Programme",
+    desc: "We work directly with your child to develop positive behaviours, emotional regulation, and greater independence, using structured, evidence-based methods tailored to each child's needs and pace.",
+    what: ["Applied Behaviour Analysis (ABA)", "Emotional regulation strategies", "Routine and structure building", "Independence skills"],
+    image: "https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200&auto=format&fit=crop",
+    dark: false,
   },
   {
     number: "02",
     title: "Speech & Language Therapy",
-    desc: "Supporting verbal and non-verbal communication, language development, articulation, and social interaction skills.",
-    image:
-      "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=1200&auto=format&fit=crop",
+    tag: "Communication",
+    desc: "Supporting children who struggle with verbal or non-verbal communication, helping them express themselves clearly, understand others, and grow their confidence in social interactions.",
+    what: ["Verbal and non-verbal communication", "Language development", "Articulation and clarity", "Social communication skills"],
+    image: "https://images.unsplash.com/photo-1518200925927-aa63b1e57a84?q=80&w=1025&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    dark: true,
   },
-{
-  number: "03",
-  title: "Occupational Therapy",
-  desc: "Helping children build sensory, motor, coordination, and daily living skills needed for everyday independence.",
-  image:
-    "https://images.unsplash.com/photo-1547496613-4e19af6736dc?q=80&w=1200&h=900&auto=format&fit=crop",
-},
+  {
+    number: "03",
+    title: "Occupational Therapy",
+    tag: "Daily Living",
+    desc: "Helping children build the sensory, motor, and coordination skills they need for everyday life, from dressing and eating independently to participating fully in school and home routines.",
+    what: ["Sensory processing support", "Fine and gross motor skills", "Coordination development", "Daily independence skills"],
+    image: "https://images.unsplash.com/photo-1547496613-4e19af6736dc?q=80&w=1200&h=900&auto=format&fit=crop",
+    dark: false,
+  },
   {
     number: "04",
-    title: "Assessments & Evaluations",
-    desc: "Comprehensive developmental and behavioural assessments designed to identify needs and guide personalized care planning.",
-    image:
-      "https://images.unsplash.com/photo-1584515933487-779824d29309?q=80&w=1200&auto=format&fit=crop",
-  },
-  {
-    number: "05",
     title: "Parent Coaching",
-    desc: "Equipping parents with practical strategies, guidance, and confidence to support their child’s development at home.",
-    image:
-      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200&auto=format&fit=crop",
-  },
-  {
-    number: "06",
-    title: "Therapist Training",
-    desc: "Professional autism therapy certification programmes built around practical clinical mentorship and hands-on learning.",
-    image:
-      "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200&auto=format&fit=crop",
+    tag: "Family Support",
+    desc: "You are your child's most important environment. We equip parents with practical, specific strategies to support their child's development at home, covering behaviour, communication, diet, and daily routines.",
+    what: ["Behaviour management strategies", "Diet and routine guidance", "Communication support at home", "Ongoing check-ins throughout the programme"],
+    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200&auto=format&fit=crop",
+    dark: true,
   },
 ];
 
+const PROGRAMME = {
+  title: "The 3-Month Programme",
+  subtitle: "Everything above, working together",
+  desc: "When you enrol in the full programme, your child receives a dedicated therapist for three months. Sessions cover behaviour, communication, occupational skills, and diet, while you receive ongoing parent coaching throughout. A structured, comprehensive approach built around your child specifically.",
+  includes: [
+    "Dedicated therapist assigned to your child",
+    "Weekly one-on-one therapy sessions",
+    "Behavioural, speech, and occupational support",
+    "Diet and routine guidance",
+    "Parent coaching throughout",
+    "Written progress reports",
+  ],
+};
+
 const BENEFITS = [
-  "Personalized Care Plans",
+  "Personalised Care Plans",
   "Evidence-Based Methods",
   "Certified Specialists",
   "Family-Centred Support",
@@ -56,179 +64,127 @@ const BENEFITS = [
 
 export default function Services() {
   return (
-    <main className="min-h-screen = text-[#1A1A1A] antialiased">
+    <main className="min-h-screen text-[#1A1A1A] antialiased">
       <Navbar />
 
       {/* ── HERO ── */}
-      <section className="relative overflow-hidden pt-28 pb-24">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#C5FF4D]/10 blur-3xl rounded-full pointer-events-none" />
+      <section className="relative overflow-hidden bg-[#1A1A1A] text-white">
+        <img
+          src="https://plus.unsplash.com/premium_photo-1745839716056-7dc088097cc5?q=80&w=1200&auto=format&fit=crop"
+          alt="Child in therapy session"
+          className="absolute inset-0 w-full h-full object-cover opacity-30"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
 
-        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-14 items-center relative z-10">
-          {/* Left */}
-          <div className="lg:col-span-6 space-y-8">
-            <div className="space-y-5">
-              <span className="inline-flex items-center rounded-full border border-stone-200 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-stone-500 bg-white shadow-sm">
-                Our Services
-              </span>
-
-              <h1 className="text-4xl lg:text-[50px] font-bold tracking-tight leading-[1.05] text-stone-900">
-                Therapy &
-                <span className="block text-[#513424] italic font-normal">
-                  Support Designed
-                </span>
-                Around Every Child
-              </h1>
-
-              <p className="text-stone-600 text-[15px] leading-relaxed max-w-xl">
-                We provide specialized autism therapy services that empower
-                children, support families, and create meaningful developmental
-                progress through compassionate care.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-4">
+        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 py-28 lg:py-40">
+          <div className="max-w-2xl">
+            <p className="uppercase tracking-[0.3em] text-xs text-stone-400 mb-6 font-medium">
+              Our Services
+            </p>
+            <h1 className="text-4xl lg:text-[54px] font-bold leading-[1.1] tracking-tight">
+              Therapy Built Around{" "}
+              <span className="italic font-normal text-[#C8A97E]">Your Child</span>
+            </h1>
+            <p className="mt-6 text-[15px] text-stone-300 max-w-xl leading-relaxed">
+              Every service we offer is part of a joined-up approach, designed
+              to support your child's behaviour, communication, independence, and
+              your family's confidence at home.
+            </p>
+            <div className="flex flex-wrap gap-4 mt-10">
               <Link
                 to="/request-therapist"
-                className="px-6 py-3.5 bg-[#513424] text-white rounded-full text-sm font-medium hover:opacity-95 transition-all"
+                className="px-6 py-3.5 bg-[#513424] text-white font-medium rounded-full hover:bg-[#6B4530] transition-all text-sm inline-flex items-center gap-2"
               >
-                Request Support →
+                Request Support
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
               </Link>
-
               <Link
-                to="/contact"
-                className="px-6 py-3.5 border border-stone-200 rounded-full text-sm font-medium text-stone-700 hover:bg-stone-50 transition-all"
+                to="/how-it-works"
+                className="px-6 py-3.5 border border-white/30 text-white font-medium rounded-full hover:bg-white/10 transition-all text-sm"
               >
-                Speak With Our Team
+                See How It Works →
               </Link>
             </div>
 
             {/* Benefits */}
-            <div className="grid grid-cols-2 gap-4 pt-4">
-              {BENEFITS.map((item) => (
-                <div
-                  key={item}
-                  className="flex items-center gap-3 bg-stone-50 border border-stone-100 rounded-2xl px-4 py-4"
-                >
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#e48e15]" />
-                  <p className="text-sm font-medium text-stone-700">{item}</p>
-                </div>
+            <div className="flex flex-wrap gap-2 mt-10">
+              {BENEFITS.map((b) => (
+                <span key={b} className="px-4 py-1.5 bg-white/10 border border-white/20 text-xs font-medium text-stone-200 rounded-full">
+                  {b}
+                </span>
               ))}
-            </div>
-          </div>
-
-          {/* Right */}
-          <div className="lg:col-span-6">
-            <div className="relative bg-[#9e9c9b]/4 rounded-[40px] rounded-tr-[140px] p-6 overflow-hidden">
-         <img
-  src="https://plus.unsplash.com/premium_photo-1745839716056-7dc088097cc5?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-  alt="African child in therapy support session"
-  className="w-full h-[620px] object-cover object-center rounded-[32px] rounded-tr-[120px]"
-/>
-
-              {/* floating cards */}
-              <div className="absolute top-10 left-10 bg-white rounded-2xl p-4 shadow-xl border border-stone-100">
-                <p className="text-xs uppercase tracking-widest text-stone-400 mb-1">
-                  Sessions
-                </p>
-                <h3 className="text-2xl font-bold text-stone-900">1-on-1</h3>
-              </div>
-
-              <div className="absolute bottom-10 right-10 bg-stone-900 text-white rounded-2xl p-5 shadow-2xl">
-                <p className="text-xs uppercase tracking-widest text-stone-400 mb-2">
-                  Care Focus
-                </p>
-
-                <div className="space-y-2 text-sm">
-                  <p>• Communication</p>
-                  <p>• Behaviour</p>
-                  <p>• Social Skills</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── SERVICES GRID ── */}
-      <section className="py-24 bg-stone-50 border-y border-stone-100">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-16">
-            <div className="max-w-2xl">
-              <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-4">
-                What We Offer
-              </p>
-
-              <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-stone-900">
-                Comprehensive Autism
-                <span className="block text-[#513424]">
-                  Therapy Services
-                </span>
-              </h2>
-            </div>
-
-            <p className="text-stone-600 max-w-lg leading-relaxed">
-              Every programme is built around developmental goals, evidence-based
-              therapy methods, and continuous collaboration with families.
-            </p>
+      {/* ── WHAT WE OFFER INTRO ── */}
+      <section className="py-16 bg-white border-b border-stone-100">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-4">What We Offer</p>
+            <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-stone-900">
+              Four Core Services,
+              <span className="block text-[#513424]">One Joined-Up Approach</span>
+            </h2>
           </div>
+          <p className="text-stone-500 max-w-md leading-relaxed text-sm">
+            These are the four areas we work in. Every programme combines them
+            based on what your child actually needs, nothing is one-size-fits-all.
+          </p>
+        </div>
+      </section>
 
-          <div className="grid lg:grid-cols-2 gap-8">
-            {SERVICES.map((service, i) => (
+      {/* ── SERVICES GRID ── */}
+      <section className="py-16 bg-stone-50 border-b border-stone-100">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            {SERVICES.map((service) => (
               <div
                 key={service.title}
-                className={`group overflow-hidden rounded-[36px] border transition-all duration-300 ${
-                  i % 2 === 0
-                    ? "bg-white border-stone-200"
-                    : "bg-[#513424] border-[#513424] text-white"
+                className={`group overflow-hidden rounded-[32px] border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+                  service.dark
+                    ? "bg-[#513424] border-[#513424] text-white"
+                    : "bg-white border-stone-200 text-[#1A1A1A]"
                 }`}
               >
                 <div className="grid md:grid-cols-2 h-full">
-                  {/* image */}
-                  <div className="relative overflow-hidden min-h-[320px]">
+                  {/* Image */}
+                  <div className="relative overflow-hidden min-h-[300px]">
                     <img
                       src={service.image}
                       alt={service.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
-
-                    <div className="absolute top-5 left-5 w-12 h-12 rounded-2xl bg-white/90 backdrop-blur-sm flex items-center justify-center text-sm font-bold text-stone-900 shadow-md">
-                      {service.number}
+                    <div className="absolute top-5 left-5 flex flex-col gap-2">
+                      <div className="w-11 h-11 rounded-2xl bg-white/90 backdrop-blur-sm flex items-center justify-center text-sm font-bold text-stone-900 shadow-md">
+                        {service.number}
+                      </div>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                        service.dark ? "bg-white/20 text-white" : "bg-[#513424]/90 text-white"
+                      }`}>
+                        {service.tag}
+                      </span>
                     </div>
                   </div>
 
-                  {/* content */}
-                  <div className="p-8 flex flex-col justify-between">
-                    <div className="space-y-5">
-                      <h3 className="text-2xl font-bold tracking-tight">
-                        {service.title}
-                      </h3>
-
-                      <p
-                        className={`text-sm leading-relaxed ${
-                          i % 2 === 0
-                            ? "text-stone-600"
-                            : "text-stone-300"
-                        }`}
-                      >
+                  {/* Content */}
+                  <div className="p-7 flex flex-col justify-between gap-5">
+                    <div className="space-y-3">
+                      <h3 className="text-xl font-bold tracking-tight leading-snug">{service.title}</h3>
+                      <p className={`text-sm leading-relaxed ${service.dark ? "text-stone-300" : "text-stone-600"}`}>
                         {service.desc}
                       </p>
                     </div>
 
-                    <div className="pt-8">
-                      <Link
-                        to="/contact"
-                        className={`inline-flex items-center gap-2 text-sm font-semibold ${
-                          i % 2 === 0
-                            ? "text-stone-900"
-                            : "text-[#C5FF4D]"
-                        }`}
-                      >
-                        Learn More
-                        <span className="group-hover:translate-x-1 transition-transform">
-                          →
-                        </span>
-                      </Link>
-                    </div>
+                    <ul className="space-y-1.5">
+                      {service.what.map((w) => (
+                        <li key={w} className="flex items-start gap-2 text-xs">
+                          <span className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${service.dark ? "bg-[#C8A97E]" : "bg-[#513424]"}`} />
+                          <span className={service.dark ? "text-stone-300" : "text-stone-600"}>{w}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -237,39 +193,85 @@ export default function Services() {
         </div>
       </section>
 
-      {/* ── SUPPORT STRIP ── */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="bg-stone-900 rounded-[40px] p-10 lg:p-16 relative overflow-hidden">
-            <div className="absolute right-0 top-0 w-72 h-72 bg-[#C5FF4D]/10 rounded-full blur-3xl" />
-
-            <div className="relative z-10 grid lg:grid-cols-12 gap-10 items-center">
-              <div className="lg:col-span-8 space-y-5">
-                <span className="inline-flex rounded-full bg-white/10 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[#C5FF4D]">
-                  Need Guidance?
+      {/* ── 3-MONTH PROGRAMME HIGHLIGHT ── */}
+      <section className="py-20 bg-white border-b border-stone-100">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="bg-[#1A1A1A] rounded-[36px] overflow-hidden grid lg:grid-cols-2">
+            {/* Left */}
+            <div className="p-10 lg:p-12 space-y-6 relative">
+              <div className="absolute top-0 left-0 w-48 h-48 bg-[#C8A97E]/10 blur-3xl rounded-full pointer-events-none" />
+              <div className="relative z-10 space-y-5">
+                <span className="inline-flex rounded-full bg-[#C8A97E]/15 border border-[#C8A97E]/30 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[#C8A97E]">
+                  Flagship Offering
                 </span>
-
-                <h2 className="text-[24px] lg:text-5xl font-bold tracking-tight text-white leading-tight">
-                  We’re Here to Help You
-                  <span className="block">Find the Right Care</span>
+                <h2 className="text-3xl lg:text-4xl font-bold text-white leading-tight tracking-tight">
+                  {PROGRAMME.title}
                 </h2>
-
-                <p className="text-stone-400 max-w-2xl leading-relaxed">
-                  Whether you’re seeking assessments, therapy sessions, or
-                  professional training, our team is ready to guide you toward
-                  the best next step.
-                </p>
-              </div>
-
-              <div className="lg:col-span-4 lg:text-right">
-                <Link
-                  to="/request-therapist"
-                  className="inline-flex items-center justify-center px-6 py-3.5 rounded-full bg-[#C5FF4D] text-black text-sm font-semibold hover:scale-[1.02] transition-transform"
-                >
-                  Book Consultation →
-                </Link>
+                <p className="text-sm text-stone-400 leading-relaxed">{PROGRAMME.desc}</p>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Link
+                    to="/how-it-works"
+                    className="px-5 py-2.5 bg-[#C8A97E] text-[#1A1A1A] font-semibold rounded-full text-sm hover:opacity-90 transition-all"
+                  >
+                    See How It Works →
+                  </Link>
+                  <Link
+                    to="/request-therapist"
+                    className="px-5 py-2.5 border border-white/20 text-white rounded-full text-sm hover:bg-white/10 transition-all"
+                  >
+                    Request Support
+                  </Link>
+                </div>
               </div>
             </div>
+
+            {/* Right, includes list */}
+            <div className="bg-[#242424] p-10 lg:p-12 space-y-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-stone-500 mb-5">
+                What's included
+              </p>
+              {PROGRAMME.includes.map((item) => (
+                <div key={item} className="flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-[#513424] flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-stone-300 leading-snug">{item}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PROCESS CTA ── */}
+      <section className="py-20 bg-stone-50">
+        <div className="max-w-5xl mx-auto px-6 text-center space-y-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Not sure where to start?</p>
+          <h2 className="text-3xl lg:text-4xl font-bold text-stone-900 leading-tight">
+            Start with a free conversation.
+            <span className="block text-[#513424] italic font-normal">No commitment required.</span>
+          </h2>
+          <p className="text-stone-500 text-sm max-w-lg mx-auto leading-relaxed">
+            Chat with Stella, our support assistant, to ask questions about
+            our services. When you're ready, submit a help request and a
+            therapist will review your child's needs personally.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4 pt-2">
+            <Link
+              to="/chat"
+              className="px-6 py-3.5 bg-[#513424] text-white font-medium rounded-full text-sm hover:bg-[#6B4530] transition-all inline-flex items-center gap-2"
+            >
+              Talk to Stella
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            </Link>
+            <Link
+              to="/how-it-works"
+              className="px-6 py-3.5 border border-stone-300 text-stone-700 font-medium rounded-full text-sm hover:bg-stone-100 transition-all"
+            >
+              See the full process →
+            </Link>
           </div>
         </div>
       </section>

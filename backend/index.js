@@ -7,6 +7,7 @@ const rateLimit = require("express-rate-limit");
 const { supabaseAdmin } = require("./config/db");
 const jwt = require("jsonwebtoken");
 
+
 app.use(helmet());
 const allowedOrigins = [
   process.env.FRONTEND_URL,
@@ -41,7 +42,9 @@ app.use("/api/auth", require("./routes/auth"));
 app.use("/api/chat", require("./routes/chat"));
 // app.use('/api/appointments', require('./routes/appointments'));
 // app.use('/api/patients', require('./routes/patients'));
-app.use("/api/therapist-application", require("./routes/therapistApplication"));
+app.use("/api/therapist", require("./routes/therapistApplication"));
+app.use("/api/admin", require("./routes/admin"))
+app.use("/api/admin/therapist-application", require("./routes/therapistApplication"));
 
 app.use((err, req, res, next) => {
   console.error("[Unhandled error]", err);

@@ -5,7 +5,7 @@ const NAV_LINKS = [
   { to: "/", label: "Home" },
   { to: "/about-us", label: "About" },
   { to: "/services", label: "Service" }, // Matched naming convention from design image
-  { to: "/contact", label: "Technology" }, // Using your path but text style matching 'Technology' in image
+  { to: "/how-it-works", label: "Process" }, // Using your path but text style matching 'Technology' in image
 ];
 
 export default function Navbar() {
