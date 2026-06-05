@@ -71,7 +71,6 @@ const useAuthStore = create(
       },
       isAdmin:     () => get().user?.role === "admin",
       isTherapist: () => get().user?.role === "therapist",
-      isPatient:   () => get().user?.role === "patient",
       accessToken: () => get().session?.access_token ?? null,
 
       // ── Internal ───────────────────────────────────────────────────────────

@@ -21,6 +21,7 @@ import OurProcess from "./pages/process";
 import PaymentPage from "./pages/uploadReciept";
 import ApplyTherapist from "./pages/applyTherapist";
 import { Toaster } from "react-hot-toast";
+import { AdminRoute } from "./components/ProtectedRoute";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -39,7 +40,7 @@ function App() {
         <Route path="/invite/reset-password" element={<ResetPassword />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index element={<AdminDashboard />} />
           <Route path="requests" element={<AdminRequests />} />
           <Route path="cases" element={<AdminCases />} />

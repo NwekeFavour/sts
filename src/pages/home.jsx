@@ -5,7 +5,7 @@ import Footer from "../components/footer";
 const STATS = [
   { value: "200+", label: "Families Supported" },
   { value: "40+", label: "Certified Therapists" },
-  { value: "8+", label: "Years of Practice" },
+  { value: "20+", label: "Years of Practice" },
   { value: "95%", label: "Satisfaction Rate" },
 ];
 
@@ -72,7 +72,7 @@ export default function Home() {
  
       {/* Content */}
       <div className="relative z-10 max-w-dvw mx-auto px-6 lg:px-12 py-32 lg:py-40 w-full">
-        <div className="max-w-2xl">
+        <div className="max-w-[1000px] space-y-6">
  
           {/* Eyebrow */}
           <p className="uppercase tracking-[0.3em] text-xs text-stone-300 mb-6 font-medium">

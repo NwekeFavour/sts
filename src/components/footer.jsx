@@ -172,9 +172,9 @@ const Footer = () => {
                   className="text-stone-500 mt-0.5 flex-shrink-0"
                 />
                 <p className="text-sm text-stone-600 leading-relaxed">
-                  24 Wellness Avenue,
+                  Galadimawa, 
                   <br />
-                  Lagos, Nigeria
+                  FCT Abuja, Nigeria
                 </p>
               </div>
 
@@ -197,10 +197,10 @@ const Footer = () => {
                   className="text-stone-500 flex-shrink-0"
                 />
                 <a
-                  href="mailto:hello@ststephensfamily.com"
+                  href="mailto:admin@ststephensfamily.com"
                   className="text-sm text-stone-600 hover:text-black transition-colors"
                 >
-                  hello@ststephensfamily.com
+                  admin@ststephensfamily.com
                 </a>
               </div>
             </div>

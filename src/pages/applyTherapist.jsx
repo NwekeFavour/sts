@@ -44,7 +44,7 @@ export default function ApplyTherapist() {
 
       {/* HERO */}
       <section className="bg-[#1A1A1A] text-white">
-        <div className="max-w-6xl mx-auto px-6 lg:px-12 py-20">
+        <div className="max-w-6xl mx-auto px-6 lg:px-12 py-30">
           <div className="max-w-2xl space-y-5">
             <p className="text-xs tracking-[0.3em] text-stone-400 uppercase">
               Careers
@@ -90,17 +90,17 @@ export default function ApplyTherapist() {
           </div>
 
           <div className="space-y-4 text-sm">
-            <div className="p-4 bg-white rounded-2xl border">
+            <div className="p-4 bg-white rounded-2xl border border-[#513424]/20">
               <p className="font-semibold">1. Application Review</p>
               <p className="text-stone-600">We assess qualifications & experience.</p>
             </div>
 
-            <div className="p-4 bg-white rounded-2xl border">
+            <div className="p-4 bg-white rounded-2xl border border-[#513424]/20">
               <p className="font-semibold">2. Shortlisting</p>
               <p className="text-stone-600">Qualified applicants are shortlisted.</p>
             </div>
 
-            <div className="p-4 bg-white rounded-2xl border">
+            <div className="p-4 bg-white rounded-2xl border border-[#513424]/20">
               <p className="font-semibold">3. Onboarding</p>
               <p className="text-stone-600">Selected candidates receive access.</p>
             </div>
@@ -120,8 +120,8 @@ export default function ApplyTherapist() {
               </h3>
 
               <div className="grid sm:grid-cols-2 gap-4">
-                <Input label="Full Name" name="fullName" value={form.fullName} onChange={handleChange} />
-                <Input label="Email" name="email" type="email" value={form.email} onChange={handleChange} />
+                <Input required label="Full Name" name="fullName" value={form.fullName} onChange={handleChange} />
+                <Input required label="Email" name="email" type="email" value={form.email} onChange={handleChange} />
                 <Input label="Phone" name="phone" value={form.phone} onChange={handleChange} />
                 <Input label="Qualifications" name="qualifications" value={form.qualifications} onChange={handleChange} />
               </div>
@@ -143,16 +143,17 @@ export default function ApplyTherapist() {
 
             {/* COVER LETTER */}
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-stone-500 uppercase">
-                Cover Letter
+              <h3 className="text-sm flex gap-1 font-semibold text-stone-500 uppercase">
+                Cover Letter <p className="text-red-400">*</p>
               </h3>
 
               <textarea
                 name="coverLetter"
                 rows="5"
+                required
                 value={form.coverLetter}
                 onChange={handleChange}
-                className="w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#513424]/20"
+                className="w-full rounded-2xl border border-[#513424]/20 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#513424]/20 "
                 placeholder="Tell us why you're a great fit..."
               />
             </div>
@@ -181,7 +182,7 @@ function Input({ label, ...props }) {
       <span className="text-sm text-stone-600">{label}</span>
       <input
         {...props}
-        className="mt-2 w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#513424]/20"
+        className="mt-2 w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none focus:ring-none focus:ring-[#513424]/20 border-[#513424]/20"
       />
     </label>
   );
