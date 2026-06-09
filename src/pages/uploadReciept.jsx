@@ -235,7 +235,7 @@ export default function PaymentPage() {
               to="/chat"
               className="flex-shrink-0 px-5 py-2.5 bg-[#513424] text-white text-xs font-medium rounded-full hover:bg-[#6B4530] transition-all"
             >
-              Chat with Stella →
+              Chat with Stephanie →
             </Link>
           </div>
 

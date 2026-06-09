@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import Navbar from "../components/header";
 import Footer from "../components/footer";
+import The from "../assets/images/the.jpeg"
 
 const STATS = [
   { value: "200+", label: "Families Supported" },
@@ -62,7 +63,7 @@ export default function Home() {
   <section className="relative overflow-hidden bg-black text-white min-h-screen flex items-center">
       {/* Background image */}
       <img
-        src="https://images.pexels.com/photos/8654039/pexels-photo-8654039.jpeg?auto=compress&cs=tinysrgb&w=1600"
+        src={The}
         alt="Autism therapy specialist with child"
         className="absolute inset-0 w-full h-full object-cover opacity-40"
       />
@@ -96,7 +97,7 @@ export default function Home() {
           <div className="flex flex-wrap gap-4 mt-10">
             <a
               href="/new"
-              className="group px-6 py-3.5 bg-[#513424] text-white font-medium rounded-full hover:bg-[#6B4530] transition-all duration-200 text-sm inline-flex items-center gap-2 shadow-lg"
+              className="group px-6 py-3.5 bg-[#E48E15] text-white font-medium rounded-full hover:bg-[#e48e15] transition-all duration-200 text-sm inline-flex items-center gap-2 shadow-lg"
             >
               Talk With Support Assistant
               <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
@@ -181,7 +182,7 @@ export default function Home() {
                 key={h.title}
                 className={`p-10 rounded-[32px] transition-all duration-300 flex flex-col justify-between min-h-[280px] ${
                   i === 1
-                    ? "bg-[#C5FF4D] text-stone-950 shadow-md transform -translate-y-1"
+                    ? "bg-[#E48E15] text-stone-100 shadow-md transform -translate-y-1"
                     : "bg-white text-stone-800 border border-stone-100 hover:border-stone-200"
                 }`}
               >
@@ -190,7 +191,7 @@ export default function Home() {
                     {h.title}
                   </h3>
                   <p
-                    className={`text-sm leading-relaxed ${i === 1 ? "text-stone-800" : "text-stone-500"}`}
+                    className={`text-sm leading-relaxed ${i === 1 ? "text-stone-100" : "text-stone-500"}`}
                   >
                     {h.desc}
                   </p>
@@ -206,7 +207,7 @@ export default function Home() {
                     </span>
                   </Link>
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${i === 1 ? "bg-black text-white" : "bg-stone-100 text-stone-600"}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${i === 1 ? "bg-white text-[#E48E15]" : "bg-stone-100 text-stone-600"}`}
                   >
                     →
                   </div>
@@ -323,15 +324,15 @@ export default function Home() {
       {/* ── COHORT / TRAINING CALLOUT ── */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="bg-stone-900 text-white rounded-[40px] p-8 lg:p-16 grid lg:grid-cols-12 gap-8 items-center relative overflow-hidden">
+          <div className="bg-[#E48E15] text-white rounded-[40px] p-8 lg:p-16 grid lg:grid-cols-12 gap-8 items-center relative overflow-hidden">
             <div className="lg:col-span-8 space-y-4 relative z-10">
-              <span className="inline-block px-3 py-1 bg-white/10 text-xs font-medium tracking-wide rounded-full text-[#C5FF4D]">
+              <span className="inline-block px-3 py-1 bg-black/10 text-xs font-medium tracking-wide rounded-full text-[#000000]/80">
                 For Professionals
               </span>
               <h2 className="text-[24px] lg:text-4xl font-bold tracking-tight">
                 Want to Become a Certified Autism Therapist?
               </h2>
-              <p className="text-stone-400 text-sm max-w-2xl leading-relaxed">
+              <p className="text-stone-900 text-sm max-w-2xl leading-relaxed">
                 Our therapist training programme is built on real clinical
                 practice. Join a cohort of passionate professionals and earn
                 your certification under the mentorship of our expert team.
@@ -340,7 +341,7 @@ export default function Home() {
             <div className="lg:col-span-4 lg:text-right relative z-10">
               <Link
                 to="/apply-therapist"
-                className="inline-block px-6 py-3.5 bg-[#C5FF4D] text-black font-semibold rounded-full hover:bg-[#b5f03d] transition-colors text-sm"
+                className="inline-block px-6 py-3.5 bg-[#000] text-white font-semibold rounded-full hover:bg-[#d47e05] transition-colors text-sm"
               >
                 Apply to Become a Therapist →
               </Link>

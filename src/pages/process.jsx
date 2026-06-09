@@ -11,11 +11,11 @@ const STEPS = [
   {
     number: "01",
     phase: "First Contact",
-    title: "Talk to Stella",
+    title: "Talk to Stephanie",
     duration: "Anytime",
-    desc: "Start by chatting with Stella, our support assistant, on the website. She can answer general questions about our services, how we work, and what to expect. Stella is available any time, no appointment needed.",
+    desc: "Start by chatting with Stephanie, our support assistant, on the website. She can answer general questions about our services, how we work, and what to expect. Stephanie is available any time, no appointment needed.",
     note: null,
-    cta: { label: "Chat with Stella", to: "/new" },
+    cta: { label: "Chat with Stephanie", to: "/new" },
     accent: "#F5F0EB",
     tag: "Free · No commitment",
   },
@@ -95,7 +95,7 @@ export default function OurProcess() {
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-[#1A1A1A] text-white">
         <img
-          src="https://images.unsplash.com/photo-1516627145497-ae6968895b74?q=80&w=1600&auto=format&fit=crop"
+          src="https://plus.unsplash.com/premium_photo-1721861983118-68ef35bea3f2?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
           alt="Family therapy session"
           className="absolute inset-0 w-full h-full object-cover opacity-25"
         />
@@ -120,9 +120,9 @@ export default function OurProcess() {
             <div className="flex flex-wrap gap-4 mt-10">
               <Link
                 to="/new"
-                className="px-6 py-3.5 bg-[#513424] text-white font-medium rounded-full hover:bg-[#6B4530] transition-all text-sm inline-flex items-center gap-2"
+                className="px-6 py-3.5 bg-[#E48E15] text-white font-medium rounded-full hover:bg-[#E48E15] transition-all text-sm inline-flex items-center gap-2"
               >
-                Start with Stella
+                Start with Stephanie
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
               </Link>
               <Link
@@ -226,17 +226,17 @@ export default function OurProcess() {
       {/* ── PAYMENT CALLOUT ───────────────────────────────────────────────── */}
       <section className="py-16 bg-stone-50 border-t border-stone-100">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="bg-[#1A1A1A] rounded-[32px] p-8 lg:p-12 grid lg:grid-cols-2 gap-8 items-end overflow-hidden relative">
+          <div className="bg-[#E48E15] rounded-[32px] p-8 lg:p-12 grid lg:grid-cols-2 gap-8 items-end overflow-hidden relative">
             <div className="absolute right-0 top-0 w-64 h-64 bg-[#C8A97E]/10 blur-3xl rounded-full pointer-events-none" />
             <div className="relative z-10 space-y-4">
-              <p className="text-xs uppercase tracking-widest text-stone-400 font-semibold">
+              <p className="text-xs uppercase tracking-widest text-stone-900 font-semibold">
                 Payment
               </p>
-              <h3 className="text-2xl lg:text-3xl font-bold text-white leading-tight">
+              <h3 className="text-2xl lg:text-3xl font-bold text-black leading-tight">
                 We don't offer online payments. Please ignore any information
                 stating otherwise.
               </h3>
-              <p className="text-stone-400 text-sm leading-relaxed">
+              <p className="text-stone-100 text-sm leading-relaxed">
                 Payment is made by direct bank transfer. Visit the payment page,
                 view our account details, complete the transfer, then upload
                 your receipt. Your programme will begin once payment is
@@ -246,11 +246,11 @@ export default function OurProcess() {
             <div className="relative z-10 lg:text-right space-y-3">
               <Link
                 to="/payment"
-                className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#C8A97E] text-[#1A1A1A] font-semibold rounded-full text-sm hover:opacity-90 transition-all"
+                className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#000] text-[#fff] font-semibold rounded-full text-sm hover:opacity-90 transition-all"
               >
                 View Bank Details →
               </Link>
-              <p className="text-stone-500 text-xs">
+              <p className="text-stone-100 text-xs">
                 Upload your receipt after transferring
               </p>
             </div>
@@ -268,7 +268,7 @@ export default function OurProcess() {
             {[
               {
                 q: "Do I need a referral to contact St Stephens?",
-                a: "No referral is needed. You can chat with Stella or fill in the help request form directly.",
+                a: "No referral is needed. You can chat with Stephanie or fill in the help request form directly.",
               },
               {
                 q: "Is the video of my child mandatory?",
@@ -310,7 +310,7 @@ export default function OurProcess() {
             Ready to take the first step?
           </h2>
           <p className="text-stone-300 text-sm leading-relaxed max-w-lg mx-auto">
-            Start with a free conversation with Stella, or fill in the help
+            Start with a free conversation with Stephanie, or fill in the help
             request form when you're ready. There's no obligation until you
             choose to proceed.
           </p>
@@ -319,7 +319,7 @@ export default function OurProcess() {
               to="/new"
               className="px-6 py-3.5 bg-white text-[#513424] font-semibold rounded-full text-sm hover:bg-stone-100 transition-all inline-flex items-center gap-2"
             >
-              Talk to Stella
+              Talk to Stephanie
               <span className="w-2 h-2 rounded-full bg-[#513424] animate-pulse" />
             </Link>
             <Link

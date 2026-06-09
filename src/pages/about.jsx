@@ -10,7 +10,7 @@ export default function AboutUs() {
         {/* HERO */}
         <section className="relative overflow-hidden bg-black text-white">
           <img
-            src="https://images.unsplash.com/photo-1516627145497-ae6968895b74?q=80&w=1600&auto=format&fit=crop"
+            src="https://plus.unsplash.com/premium_photo-1721861983813-46ce2f2ae323?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             alt="Community"
             className="absolute inset-0 w-full h-full object-cover opacity-35"
           />
@@ -132,7 +132,7 @@ export default function AboutUs() {
         <section className="py-24 px-6 lg:px-12">
           <div className="max-w-7xl mx-auto bg-black text-white rounded-[50px] p-10 lg:p-20 relative overflow-hidden">
             <img
-              src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?q=80&w=1600&auto=format&fit=crop"
+              src="https://images.unsplash.com/photo-1509099836639-18ba1795216d?q=80&w=1031&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
               alt="Community support"
               className="absolute inset-0 w-full h-full object-cover opacity-25"
             />
@@ -143,7 +143,7 @@ export default function AboutUs() {
                   Our Mission
                 </p>
 
-                <h2 className="text-4xl lg:text-6xl font-bold leading-tight">
+                <h2 className="text-4xl lg:text-[50px] font-bold leading-tight">
                   Empowering children and strengthening families every day.
                 </h2>
 

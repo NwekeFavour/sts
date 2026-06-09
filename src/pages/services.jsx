@@ -36,7 +36,7 @@ const SERVICES = [
     tag: "Family Support",
     desc: "You are your child's most important environment. We equip parents with practical, specific strategies to support their child's development at home, covering behaviour, communication, diet, and daily routines.",
     what: ["Behaviour management strategies", "Diet and routine guidance", "Communication support at home", "Ongoing check-ins throughout the programme"],
-    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200&auto=format&fit=crop",
+    image: "https://plus.unsplash.com/premium_photo-1721861983118-68ef35bea3f2?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     dark: true,
   },
 ];
@@ -254,7 +254,7 @@ export default function Services() {
             <span className="block text-[#513424] italic font-normal">No commitment required.</span>
           </h2>
           <p className="text-stone-500 text-sm max-w-lg mx-auto leading-relaxed">
-            Chat with Stella, our support assistant, to ask questions about
+            Chat with Stephanie, our support assistant, to ask questions about
             our services. When you're ready, submit a help request and a
             therapist will review your child's needs personally.
           </p>
@@ -263,7 +263,7 @@ export default function Services() {
               to="/chat"
               className="px-6 py-3.5 bg-[#513424] text-white font-medium rounded-full text-sm hover:bg-[#6B4530] transition-all inline-flex items-center gap-2"
             >
-              Talk to Stella
+              Talk to Stephanie
               <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
             </Link>
             <Link

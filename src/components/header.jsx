@@ -45,8 +45,8 @@ export default function Navbar() {
             const isActive = location.pathname === to;
             return (
               <li key={to}>
-                <Link
-                  to={to}
+                <a
+                  href={to}
                   className={`text-sm font-medium tracking-wide transition-colors relative pb-1 block group ${
                     isActive
                       ? "text-stone-950 font-semibold"
@@ -60,7 +60,7 @@ export default function Navbar() {
                     )}
                     {label}
                   </span>
-                </Link>
+                </a>
               </li>
             );
           })}
@@ -95,9 +95,9 @@ export default function Navbar() {
         }`}
       >
         {NAV_LINKS.map(({ to, label }) => (
-          <Link
+          <a
             key={to}
-            to={to}
+            href={to}
             className={`text-xl font-medium tracking-tight border-b border-stone-100 pb-3 ${
               location.pathname === to
                 ? "text-stone-950 font-bold"
@@ -105,7 +105,7 @@ export default function Navbar() {
             }`}
           >
             {label}
-          </Link>
+          </a>
         ))}
       </div>
     </nav>
