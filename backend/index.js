@@ -56,6 +56,7 @@ app.use("/api/chat",                       require("./routes/chat"));
 app.use("/api/therapist",                  require("./routes/therapistApplication"));
 app.use("/api/admin",                      require("./routes/admin"));
 app.use("/api/admin/therapist-application",require("./routes/therapistApplication"));
+app.use("/api/requests", require("./routes/request"));
 
 // ─── Error handler ────────────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {

@@ -13,7 +13,7 @@ const Footer = () => {
     <footer className=" border-stone-200 mt-24">
       <div className="max-w-7xl mx-auto px-6 py-16">
         {/* Top CTA */}
-        <div className="bg-[#d0aa75] rounded-[32px] p-8 lg:p-12 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-16">
+        <div className="bg-[#E48E15] rounded-[32px] p-8 lg:p-12 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-16">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-wider text-white mb-3">
               Compassionate Autism Support

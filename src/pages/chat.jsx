@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useChatStore } from "../store/useChatStore";
+import useTherapistRequestStore from "../store/useTherapistRequestStore";
 
 
 export const STEPHANIE_CHARACTER = {
@@ -271,9 +272,381 @@ function Sidebar({ open, onClose, onRequestHelp, isMobile }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
+
+// ─── design tokens ────────────────────────────────────────────────────────
+const T = {
+  ink:       "#1A1A1E",
+  muted:     "#6B7280",
+  faint:     "#9CA3AF",
+  border:    "#E4E7E4",
+  surface:   "#F8FAF8",
+  danger:    "#DC2626",
+  dangerBg:  "#FEF2F2",
+  successBg: "#F0FDF4",
+};
+
+// ─── micro-styles ─────────────────────────────────────────────────────────
+const fieldStyle = {
+  display: "block", width: "100%", padding: "10px 12px",
+  border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 13.5,
+  color: T.ink, background: T.surface, marginBottom: 12,
+  outline: "none", boxSizing: "border-box", fontFamily: "inherit",
+};
+const labelStyle = {
+  display: "block", fontSize: 11, fontWeight: 700, color: T.faint,
+  marginBottom: 5, letterSpacing: "0.06em", textTransform: "uppercase",
+};
+const btnPrimary = {
+  flex: 1, padding: "11px 0", background: T.ink, color: "#fff",
+  border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 600,
+  cursor: "pointer", transition: "opacity 0.15s",
+};
+const btnGhost = {
+  flex: 1, padding: "11px 0", background: "transparent", color: T.muted,
+  border: `1px solid ${T.border}`, borderRadius: 9, fontSize: 13.5, cursor: "pointer",
+};
+const row = { display: "flex", gap: 10, marginTop: 8 };
+const half = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 };
+
+// ─── shared field wrapper ─────────────────────────────────────────────────
+function F({ label, children, style }) {
+  return (
+    <div style={style}>
+      <span style={labelStyle}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+// ─── step pills ───────────────────────────────────────────────────────────
+const STEP_LABELS = ["", "Your details", "Child's profile", "Video"];
+function Steps({ current }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 22 }}>
+      {[1, 2, 3].map((n) => (
+        <div key={n} style={{
+          height: 6, borderRadius: 99,
+          width: n === current ? 22 : 7,
+          background: n <= current ? T.ink : T.border,
+          transition: "all 0.25s ease",
+        }} />
+      ))}
+      <span style={{ fontSize: 11.5, color: T.muted, marginLeft: 4 }}>
+        {STEP_LABELS[current]}
+      </span>
+    </div>
+  );
+}
+
+// ─── Step 1: parent + child basics ────────────────────────────────────────
+function Step1() {
+  const { form, setField, setStep, closeModal } = useTherapistRequestStore();
+  const canContinue =
+    form.parentName.trim() &&
+    /\S+@\S+\.\S+/.test(form.parentEmail) &&
+    form.childName.trim();
+
+  return (
+    <>
+      <div style={{ fontWeight: 700, fontSize: 18, color: T.ink, marginBottom: 4 }}>
+        Request a therapist
+      </div>
+      <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.65, marginBottom: 20 }}>
+        Tell us about yourself and your child so we can find the right match.
+      </p>
+      <Steps current={1} />
+
+      <div style={half}>
+        <F label="Your full name">
+          <input value={form.parentName} placeholder="e.g. Ngozi Okafor"
+            onChange={(e) => setField("parentName", e.target.value)} style={fieldStyle} />
+        </F>
+        <F label="Phone number">
+          <input value={form.parentPhone} placeholder="e.g. +234 800 000 0000"
+            onChange={(e) => setField("parentPhone", e.target.value)} style={fieldStyle} />
+        </F>
+      </div>
+
+      <F label="Email address">
+        <input type="email" value={form.parentEmail} placeholder="you@example.com"
+          onChange={(e) => setField("parentEmail", e.target.value)} style={fieldStyle} />
+      </F>
+
+      <div style={half}>
+        <F label="Child's first name">
+          <input value={form.childName} placeholder="e.g. Kofi"
+            onChange={(e) => setField("childName", e.target.value)} style={fieldStyle} />
+        </F>
+        <F label="Child's age">
+          <input type="number" min={0} max={17} value={form.childAge}
+            placeholder="e.g. 4"
+            onChange={(e) => setField("childAge", e.target.value)} style={fieldStyle} />
+        </F>
+      </div>
+
+      <div>
+        <select value={form.childGender} onChange={(e) => setField("childGender", e.target.value)} style={fieldStyle}>
+          <option value="">Select gender</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="prefer_not_to_say">Prefer not to say</option>
+        </select>
+      </div>
+
+      <F label="Location (city / state)">
+        <input value={form.location} placeholder="e.g. Lagos, Nigeria"
+          onChange={(e) => setField("location", e.target.value)} style={fieldStyle} />
+      </F>
+
+      <div style={row}>
+        <button onClick={closeModal} style={btnGhost}>Cancel</button>
+        <button onClick={() => setStep(2)} disabled={!canContinue}
+          style={{ ...btnPrimary, opacity: canContinue ? 1 : 0.38 }}>
+          Continue →
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ─── Step 2: behavioural profile ──────────────────────────────────────────
+function Step2() {
+  const { form, setField, setStep } = useTherapistRequestStore();
+
+  return (
+    <>
+      <div style={{ fontWeight: 700, fontSize: 18, color: T.ink, marginBottom: 4 }}>
+        Child's profile
+      </div>
+      <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.65, marginBottom: 20 }}>
+        This helps the therapist prepare well before the first session.
+      </p>
+      <Steps current={2} />
+
+      <F label="Behaviours or challenges you're noticing">
+        <textarea value={form.behaviours}
+          placeholder="e.g. frequent meltdowns, difficulty focusing, withdrawing socially…"
+          onChange={(e) => setField("behaviours", e.target.value)}
+          style={{ ...fieldStyle, height: 82, resize: "none" }} />
+      </F>
+      <F label="How long has this been going on?">
+        <input value={form.duration} placeholder="e.g. About 6 months"
+          onChange={(e) => setField("duration", e.target.value)} style={fieldStyle} />
+      </F>
+      <F label="Previous therapy or diagnosis (if any)">
+        <textarea value={form.history}
+          placeholder="e.g. Attended occupational therapy in 2023 — or None"
+          onChange={(e) => setField("history", e.target.value)}
+          style={{ ...fieldStyle, height: 70, resize: "none" }} />
+      </F>
+      <F label="Anything else we should know? (optional)">
+        <textarea value={form.extra}
+          placeholder="Family situation, known triggers, what helps calm them down…"
+          onChange={(e) => setField("extra", e.target.value)}
+          style={{ ...fieldStyle, height: 70, resize: "none" }} />
+      </F>
+
+      <div style={row}>
+        <button onClick={() => setStep(1)} style={btnGhost}>← Back</button>
+        <button onClick={() => setStep(3)} style={btnPrimary}>Continue →</button>
+      </div>
+    </>
+  );
+}
+
+// ─── Step 3: video upload ─────────────────────────────────────────────────
+function Step3() {
+  const {
+    form, setVideoFile, setStep, submit,
+    uploading, uploadProgress, videoError, submitError,
+  } = useTherapistRequestStore();
+
+  const inputRef   = useRef(null);
+  const [preview, setPreview]   = useState(null);
+  const [dragging, setDragging] = useState(false);
+
+  const handleFile = useCallback(async (file) => {
+    if (!file) return;
+    await setVideoFile(file);
+    setTimeout(() => {
+      if (!useTherapistRequestStore.getState().videoError) {
+        setPreview(URL.createObjectURL(file));
+      }
+    }, 60);
+  }, [setVideoFile]);
+
+  const removeVideo = (e) => {
+    e.stopPropagation();
+    setVideoFile(null);
+    setPreview(null);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const dropBorder = videoError ? T.danger : dragging ? T.ink : form.videoFile ? T.ink : T.border;
+
+  return (
+    <>
+      <div style={{ fontWeight: 700, fontSize: 18, color: T.ink, marginBottom: 4 }}>
+        Upload a short video
+      </div>
+      <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.65, marginBottom: 20 }}>
+        A natural, unposed clip of your child — under 5 minutes. Kept strictly confidential
+        and only visible to the assigned therapist and admin.
+      </p>
+      <Steps current={3} />
+
+      {/* drop zone */}
+      <div
+        onDrop={(e) => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files?.[0]); }}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onClick={() => !uploading && inputRef.current?.click()}
+        style={{
+          border: `2px dashed ${dropBorder}`,
+          borderRadius: 12,
+          padding: preview ? 12 : "26px 16px",
+          textAlign: "center",
+          cursor: uploading ? "default" : "pointer",
+          background: dragging ? "#F0F2F0" : T.surface,
+          marginBottom: 10,
+          transition: "border-color 0.15s, background 0.15s",
+        }}
+      >
+        {preview ? (
+          <>
+            <video src={preview} controls
+              style={{ width: "100%", maxHeight: 190, borderRadius: 8, display: "block" }} />
+            <div style={{ fontSize: 12, color: T.muted, marginTop: 8, wordBreak: "break-all" }}>
+              {form.videoFile?.name}
+            </div>
+            {!uploading && (
+              <button onClick={removeVideo} style={{
+                marginTop: 6, fontSize: 12, color: T.muted,
+                background: "none", border: "none", cursor: "pointer", textDecoration: "underline",
+              }}>
+                Remove
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 30, marginBottom: 8 }}>🎥</div>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink }}>
+              {dragging ? "Drop it here" : "Drag & drop or tap to choose"}
+            </div>
+            <div style={{ fontSize: 12, color: T.faint, marginTop: 4 }}>
+              MP4, MOV, or WebM · Under 5 minutes · Max 200 MB
+            </div>
+          </>
+        )}
+        <input required ref={inputRef} type="file" accept="video/*" style={{ display: "none" }}
+          onChange={(e) => handleFile(e.target.files?.[0])} />
+      </div>
+
+      {videoError && (
+        <div style={{
+          fontSize: 12.5, color: T.danger, padding: "9px 12px",
+          background: T.dangerBg, borderRadius: 8, marginBottom: 10,
+        }}>
+          {videoError}
+        </div>
+      )}
+
+      {/* progress bar */}
+      {uploading && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: T.muted, marginBottom: 5 }}>
+            <span>Uploading…</span><span>{uploadProgress}%</span>
+          </div>
+          <div style={{ height: 5, background: T.border, borderRadius: 99, overflow: "hidden" }}>
+            <div style={{
+              height: 5, background: T.ink, borderRadius: 99,
+              width: `${uploadProgress}%`, transition: "width 0.35s ease",
+            }} />
+          </div>
+        </div>
+      )}
+
+      {submitError && (
+        <div style={{
+          fontSize: 12.5, color: T.danger, padding: "9px 12px",
+          background: T.dangerBg, borderRadius: 8, marginBottom: 10,
+        }}>
+          {submitError}
+        </div>
+      )}
+
+      <div style={row}>
+        <button onClick={() => setStep(2)} disabled={uploading}
+          style={{ ...btnGhost, opacity: uploading ? 0.4 : 1 }}>
+          ← Back
+        </button>
+        <button onClick={submit} disabled={!form.videoFile || uploading}
+          style={{ ...btnPrimary, opacity: form.videoFile && !uploading ? 1 : 0.38 }}>
+          {uploading ? "Sending…" : "Send request"}
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ─── Success screen ───────────────────────────────────────────────────────
+function Success() {
+  const { form, closeModal, reset } = useTherapistRequestStore();
+  return (
+    <div style={{ textAlign: "center", padding: "8px 0 4px" }}>
+      <div style={{
+        width: 56, height: 56, borderRadius: "50%", background: T.successBg,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        margin: "0 auto 16px", fontSize: 26,
+      }}>
+        ✅
+      </div>
+      <div style={{ fontWeight: 700, fontSize: 19, color: T.ink, marginBottom: 6 }}>
+        Request sent!
+      </div>
+      <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.65, marginBottom: 24 }}>
+        Thank you, <strong>{form.parentName}</strong>. The St Stephens team will review
+        your request and reach out to <strong>{form.parentEmail}</strong> shortly.
+      </p>
+      <button onClick={() => { reset(); closeModal(); }}
+        style={{ ...btnPrimary, flex: "none", padding: "11px 36px" }}>
+        Done
+      </button>
+    </div>
+  );
+}
+
+// ─── Root modal ───────────────────────────────────────────────────────────
+function TherapistRequestModal() {
+  const { isOpen, step, requestSent, closeModal, uploading } = useTherapistRequestStore();
+  if (!isOpen) return null;
+
+  return (
+    <div
+      onClick={(e) => e.target === e.currentTarget && !uploading && closeModal()}
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.42)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        zIndex: 300, padding: 16,
+      }}
+    >
+      <div style={{
+        background: "#fff", borderRadius: 18, padding: "28px 24px 24px",
+        width: "100%", maxWidth: 430, maxHeight: "92vh", overflowY: "auto",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.16)",
+      }}>
+        {requestSent ? <Success /> : (
+          <>
+            {step === 1 && <Step1 />}
+            {step === 2 && <Step2 />}
+            {step === 3 && <Step3 />}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 export default function StStephensChatbot() {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -285,21 +658,14 @@ export default function StStephensChatbot() {
     clearChat
   } = useChatStore();
   const [input, setInput] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [requestForm, setRequestForm] = useState({ name: "", email: "", message: "" });
-  const [requestSent, setRequestSent] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+
+    const openModal = useTherapistRequestStore((s) => s.openModal);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
-
-
-  function handleRequestSubmit() {
-    console.log("Help request:", requestForm);
-    setRequestSent(true);
-  }
 
   const avatarStyle = {
     width: 26, height: 26, borderRadius: "50%", background: "#1C1C1E",
@@ -321,7 +687,7 @@ export default function StStephensChatbot() {
       <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        onRequestHelp={() => setShowModal(true)}
+        onRequestHelp={openModal}
         isMobile={isMobile}
       />
 
@@ -368,7 +734,7 @@ export default function StStephensChatbot() {
         {retrying && (
           <div style={{ background: "#FFF8E6", borderBottom: "1px solid #F0D080", padding: "8px 16px", fontSize: 12, color: "#7A5C00", flexShrink: 0 }}>
             ⏳ High demand, replies may be delayed.{" "}
-            <button onClick={() => setShowModal(true)} style={{ background: "none", border: "none", color: "#4A7C5F", fontWeight: 600, cursor: "pointer", padding: 0, fontSize: 12, textDecoration: "underline" }}>
+            <button onClick={() => openModal()} style={{ background: "none", border: "none", color: "#4A7C5F", fontWeight: 600, cursor: "pointer", padding: 0, fontSize: 12, textDecoration: "underline" }}>
               Request help directly →
             </button>
           </div>
@@ -393,7 +759,7 @@ export default function StStephensChatbot() {
               }}>
                 {m.role === "assistant" ? <MessageText text={m.content} /> : m.content}
                 {m.role === "assistant" && m.content.toLowerCase().includes("request help") && (
-                  <button onClick={() => setShowModal(true)} style={{
+                  <button onClick={openModal} style={{
                     display: "block", marginTop: 10, padding: "7px 13px",
                     background: "#EFF1EF", color: "#1C1C1E",
                     border: "1px solid rgba(0,0,0,0.12)", borderRadius: 7,
@@ -464,7 +830,7 @@ export default function StStephensChatbot() {
             flexShrink: 0, transition: "background 0.15s",
           }}><SendIcon /></button>
           {isMobile && (
-            <button onClick={() => setShowModal(true)} style={{
+            <button onClick={openModal} style={{
               height: 38, padding: "0 12px", background: "#EFF1EF",
               border: "1px solid rgba(0,0,0,0.1)", borderRadius: 19,
               fontSize: 12, fontWeight: 600, color: "#1a1a1a",
@@ -475,55 +841,8 @@ export default function StStephensChatbot() {
       </div>
 
       {/* ── Request Help modal ── */}
-      {showModal && (
-        <div onClick={(e) => e.target === e.currentTarget && setShowModal(false)} style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 300, padding: 16,
-        }}>
-          <div style={{ background: "#fff", borderRadius: 16, padding: "26px 24px 22px", width: "100%", maxWidth: 400 }}>
-            {!requestSent ? (
-              <>
-                <div style={{ fontWeight: 600, fontSize: 19, color: "#1a1a1a", marginBottom: 7 }}>Request a therapist</div>
-                <p style={{ fontSize: 13, color: "#555", marginBottom: 18, lineHeight: 1.6 }}>
-                  Fill in your details and a member of our team will be in touch to arrange support.
-                </p>
-                <input placeholder="Your full name" value={requestForm.name}
-                  onChange={(e) => setRequestForm({ ...requestForm, name: e.target.value })}
-                  style={inputFieldStyle} />
-                <input placeholder="Email address" type="email" value={requestForm.email}
-                  onChange={(e) => setRequestForm({ ...requestForm, email: e.target.value })}
-                  style={inputFieldStyle} />
-                <textarea placeholder="Briefly describe what kind of support you're looking for (optional)"
-                  value={requestForm.message}
-                  onChange={(e) => setRequestForm({ ...requestForm, message: e.target.value })}
-                  style={{ ...inputFieldStyle, height: 84, resize: "none", marginBottom: 14 }} />
-                <div style={{ display: "flex", gap: 10 }}>
-                  <button onClick={handleRequestSubmit} style={{
-                    flex: 1, padding: "11px 0", background: "#1C1C1E", color: "#fff",
-                    border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 600, cursor: "pointer",
-                  }}>Send request</button>
-                  <button onClick={() => setShowModal(false)} style={{
-                    flex: 1, padding: "11px 0", background: "#EFF1EF", color: "#333",
-                    border: "1px solid rgba(0,0,0,0.1)", borderRadius: 9, fontSize: 13.5, cursor: "pointer",
-                  }}>Cancel</button>
-                </div>
-              </>
-            ) : (
-              <div style={{ textAlign: "center", padding: "10px 0" }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>✅</div>
-                <div style={{ fontWeight: 600, fontSize: 19, color: "#1a1a1a", marginBottom: 7 }}>Request sent!</div>
-                <p style={{ fontSize: 13, color: "#555", lineHeight: 1.6, marginBottom: 20 }}>
-                  Thank you, {requestForm.name}. The St Stephens team will be in touch at <strong>{requestForm.email}</strong> shortly.
-                </p>
-                <button onClick={() => { setShowModal(false); setRequestSent(false); setRequestForm({ name: "", email: "", message: "" }); }}
-                  style={{ padding: "11px 28px", background: "#1C1C1E", color: "#fff", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}>
-                  Close
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+      {openModal && (
+        <TherapistRequestModal/>
       )}
     </div>
   );

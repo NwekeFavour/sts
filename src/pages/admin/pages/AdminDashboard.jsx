@@ -103,7 +103,18 @@ function FilterPill({ active, label, count, onClick }) {
   );
 }
 
-// ── Applications section ──────────────────────────────────────────────────────
+// Drop-in replacement for ApplicationsSection
+// Changes:
+// - Added experience_level badge in table + mobile cards
+// - Expanded row now shows all structured fields from the new form
+// - cover_letter renders with section breaks (the \n\n[Section] format from controller)
+
+const LEVEL_BADGE = {
+  beginner:     "bg-green-50 text-green-700 border-green-200",
+  intermediate: "bg-blue-50 text-blue-700 border-blue-200",
+  expert:       "bg-purple-50 text-purple-700 border-purple-200",
+};
+
 function ApplicationsSection() {
   const {
     applications,
@@ -116,10 +127,10 @@ function ApplicationsSection() {
     deleteApplication,
   } = useAdminStore();
 
-  const [filter, setFilter]         = useState("all");
-  const [expanded, setExpanded]     = useState(null);   // expanded row id
-  const [actionLoading, setAction]  = useState(null);   // { id, type }
-  const [confirm, setConfirm]       = useState(null);   // { id, type }
+  const [filter, setFilter]             = useState("all");
+  const [expanded, setExpanded]         = useState(null);
+  const [actionLoading, setAction]      = useState(null);
+  const [confirm, setConfirm]           = useState(null);
   const [rejectReason, setRejectReason] = useState("");
 
   useEffect(() => { fetchApplications(); }, []);
@@ -143,8 +154,12 @@ function ApplicationsSection() {
       else if (type === "reject") await rejectApplication(id, rejectReason);
       else if (type === "reset")  await resetApplication(id);
       else if (type === "delete") await deleteApplication(id);
-
-      toast.success("Application updated successfully");
+      toast.success(
+        type === "delete" ? "Application deleted" :
+        type === "approve" ? "Application approved" :
+        type === "reject"  ? "Application rejected" :
+        "Reset to pending"
+      );
     } catch (err) {
       toast.error(err.message || "Something went wrong");
     } finally {
@@ -179,16 +194,9 @@ function ApplicationsSection() {
             <p className="text-xs text-gray-400 mt-0.5">{counts.pending} pending review</p>
           </div>
         </div>
-        {/* Filter pills */}
         <div className="flex flex-wrap gap-2">
           {FILTERS.map(f => (
-            <FilterPill
-              key={f.key}
-              active={filter === f.key}
-              label={f.label}
-              count={counts[f.key]}
-              onClick={() => setFilter(f.key)}
-            />
+            <FilterPill key={f.key} active={filter === f.key} label={f.label} count={counts[f.key]} onClick={() => setFilter(f.key)} />
           ))}
         </div>
       </div>
@@ -202,9 +210,7 @@ function ApplicationsSection() {
         <div className="flex flex-col items-center py-14 gap-3 text-center">
           <AlertTriangle size={24} className="text-red-400" />
           <p className="text-xs text-gray-500">{applicationsError}</p>
-          <button onClick={fetchApplications} className="text-xs font-semibold text-[#E8890C] hover:underline">
-            Retry
-          </button>
+          <button onClick={fetchApplications} className="text-xs font-semibold text-[#E8890C] hover:underline">Retry</button>
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center py-14 gap-2 text-center">
@@ -215,13 +221,11 @@ function ApplicationsSection() {
         <>
           {/* ── Desktop table ── */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full min-w-[700px]">
+            <table className="w-full min-w-[760px]">
               <thead>
                 <tr className="bg-gray-50/60">
-                  {["Applicant", "Contact", "Specialization", "Experience", "Status", "Actions"].map(h => (
-                    <th key={h} className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-5 py-3">
-                      {h}
-                    </th>
+                  {["Applicant", "Contact", "Specialization", "Level", "Status", "Actions"].map(h => (
+                    <th key={h} className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-5 py-3">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -244,8 +248,15 @@ function ApplicationsSection() {
                       <td className="px-3 py-3.5 text-xs text-gray-500">
                         {app.specialization || <span className="text-gray-300">—</span>}
                       </td>
-                      <td className="px-3 py-3.5 text-xs text-gray-500">
-                        {app.years_of_experience ? `${app.years_of_experience} yrs` : <span className="text-gray-300">—</span>}
+                      {/* Experience level badge */}
+                      <td className="px-3 py-3.5">
+                        {app.experience_level ? (
+                          <span className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-full capitalize border ${LEVEL_BADGE[app.experience_level] ?? "bg-gray-100 text-gray-500 border-gray-200"}`}>
+                            {app.experience_level}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
                       </td>
                       <td className="px-3 py-3.5">
                         <span className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${APP_BADGE[app.status]}`}>
@@ -255,62 +266,106 @@ function ApplicationsSection() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                           {app.status !== "approved" && (
-                            <button
-                              title="Approve"
-                              disabled={!!actionLoading}
+                            <button title="Approve" disabled={!!actionLoading}
                               onClick={() => setConfirm({ id: app.id, type: "approve" })}
-                              className="w-7 h-7 rounded-lg bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition disabled:opacity-40"
-                            >
+                              className="w-7 h-7 rounded-lg bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition disabled:opacity-40">
                               {isLoading(app.id, "approve") ? <Loader2 size={12} className="animate-spin" /> : <CheckCheck size={13} />}
                             </button>
                           )}
                           {app.status !== "rejected" && (
-                            <button
-                              title="Reject"
-                              disabled={!!actionLoading}
-                              onClick={() => setConfirm({ id: app.id, type: "reject"  })}
-                              className="w-7 h-7 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition disabled:opacity-40"
-                            >
+                            <button title="Reject" disabled={!!actionLoading}
+                              onClick={() => setConfirm({ id: app.id, type: "reject" })}
+                              className="w-7 h-7 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition disabled:opacity-40">
                               {isLoading(app.id, "reject") ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={13} />}
                             </button>
                           )}
                           {app.status !== "pending" && (
-                            <button
-                              title="Reset to pending"
-                              disabled={!!actionLoading}
+                            <button title="Reset to pending" disabled={!!actionLoading}
                               onClick={() => setConfirm({ id: app.id, type: "reset" })}
-                              className="w-7 h-7 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center hover:bg-amber-100 transition disabled:opacity-40"
-                            >
+                              className="w-7 h-7 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center hover:bg-amber-100 transition disabled:opacity-40">
                               {isLoading(app.id, "reset") ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
                             </button>
                           )}
-                          <button
-                            title="Delete"
-                            disabled={!!actionLoading}
+                          <button title="Delete" disabled={!!actionLoading}
                             onClick={() => setConfirm({ id: app.id, type: "delete" })}
-                            className="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition disabled:opacity-40"
-                          >
+                            className="w-7 h-7 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition disabled:opacity-40">
                             {isLoading(app.id, "delete") ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                           </button>
-                          <ChevronDown
-                            size={13}
-                            className={`text-gray-300 transition-transform ${expanded === app.id ? "rotate-180" : ""}`}
-                          />
+                          <ChevronDown size={13} className={`text-gray-300 transition-transform ${expanded === app.id ? "rotate-180" : ""}`} />
                         </div>
                       </td>
                     </tr>
 
-                    {/* Expanded detail row */}
+                    {/* ── Expanded detail row ── */}
                     {expanded === app.id && (
                       <tr key={`${app.id}-detail`} className="bg-gray-50/40">
-                        <td colSpan={6} className="px-5 py-4">
-                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-                            <Detail label="Qualifications" value={app.qualifications} />
+                        <td colSpan={6} className="px-5 py-5">
+                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs mb-4">
+                            <Detail label="Experience Level" value={app.experience_level ? app.experience_level.charAt(0).toUpperCase() + app.experience_level.slice(1) : null} />
+                            <Detail label="Qualifications / Education" value={app.qualifications} />
+                            <Detail label="Years of Experience" value={app.years_of_experience ? `${app.years_of_experience} years` : null} />
                             <Detail label="License Number" value={app.license_number} />
+                            <Detail label="Specialization" value={app.specialization} />
                             <Detail label="Resume" value={app.resume_link} isLink />
-                            <Detail label="Cover Letter" value={app.cover_letter} wide />
                             <Detail label="Submitted" value={app.created_at ? new Date(app.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null} />
                           </div>
+                          {/* Cover letter — renders structured sections */}
+                          {app.cover_letter && (() => {
+  const firstQuestionIndex = app.cover_letter.search(/\n\s*\[/);
+
+  const coverLetter =
+    firstQuestionIndex > -1
+      ? app.cover_letter.slice(0, firstQuestionIndex).trim()
+      : app.cover_letter.trim();
+
+  const answers =
+    firstQuestionIndex > -1
+      ? app.cover_letter.slice(firstQuestionIndex)
+      : "";
+
+  const questionBlocks = [...answers.matchAll(/\[(.+?)\]\n([\s\S]*?)(?=\n\s*\[|$)/g)];
+
+  return (
+    <div className="mt-3 space-y-4">
+
+      {/* Cover Letter */}
+      <div>
+        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2">
+          Cover Letter
+        </p>
+
+        <div className="bg-white border border-gray-100 rounded-xl p-4">
+          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-7">
+            {coverLetter}
+          </p>
+        </div>
+      </div>
+
+      {/* Application Questions */}
+      {questionBlocks.length > 0 && (
+        <div>
+          <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2">
+            Application Questions
+          </p>
+
+          <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-100">
+            {questionBlocks.map((match, i) => (
+              <div key={i} className="p-4">
+                <p className="text-xs font-semibold text-gray-900 mb-2">
+                  {match[1]}
+                </p>
+
+                <div className="inline-flex items-center rounded-lg bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
+                  {match[2].trim() || "No answer"}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+})()}
                         </td>
                       </tr>
                     )}
@@ -330,9 +385,16 @@ function ApplicationsSection() {
                     <p className="text-xs text-gray-400 mt-0.5">{app.email}</p>
                     <p className="text-[10px] text-gray-400">{app.phone}</p>
                   </div>
-                  <span className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-full capitalize flex-shrink-0 ${APP_BADGE[app.status]}`}>
-                    {app.status}
-                  </span>
+                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                    <span className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${APP_BADGE[app.status]}`}>
+                      {app.status}
+                    </span>
+                    {app.experience_level && (
+                      <span className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-full capitalize border ${LEVEL_BADGE[app.experience_level]}`}>
+                        {app.experience_level}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -340,7 +402,6 @@ function ApplicationsSection() {
                   <Detail label="Experience" value={app.years_of_experience ? `${app.years_of_experience} yrs` : null} />
                 </div>
 
-                {/* Expandable on mobile */}
                 <button
                   onClick={() => setExpanded(expanded === app.id ? null : app.id)}
                   className="flex items-center gap-1 text-[11px] text-gray-400 font-medium"
@@ -350,50 +411,46 @@ function ApplicationsSection() {
                 </button>
 
                 {expanded === app.id && (
-                  <div className="space-y-2 pt-1 border-t border-gray-100">
+                  <div className="space-y-3 pt-2 border-t border-gray-100">
                     <Detail label="Qualifications" value={app.qualifications} />
                     <Detail label="License" value={app.license_number} />
                     <Detail label="Resume" value={app.resume_link} isLink />
-                    <Detail label="Cover Letter" value={app.cover_letter} />
+                    {app.cover_letter && (
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2">Application answers</p>
+                        <div className="space-y-2">
+                          {app.cover_letter.split("\n\n").map((section, i) => {
+                            const m = section.match(/^\[(.+?)\]\n([\s\S]+)$/);
+                            if (m) return (
+                              <div key={i} className="bg-gray-50 rounded-lg p-3">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">{m[1]}</p>
+                                <p className="text-xs text-gray-700 leading-relaxed">{m[2]}</p>
+                              </div>
+                            );
+                            return (
+                              <div key={i} className="bg-gray-50 rounded-lg p-3">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Cover letter</p>
+                                <p className="text-xs text-gray-700 leading-relaxed">{section}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Action buttons */}
                 <div className="flex flex-wrap gap-2 pt-1">
                   {app.status !== "approved" && (
-                    <ActionBtn
-                      label="Approve" icon={<CheckCheck size={11} />}
-                      loading={isLoading(app.id, "approve")}
-                      disabled={!!actionLoading}
-                      className="bg-green-50 text-green-700 border-green-200"
-                      onClick={() => setConfirm({ id: app.id, type: "approve" })}
-                    />
+                    <ActionBtn label="Approve" icon={<CheckCheck size={11} />} loading={isLoading(app.id, "approve")} disabled={!!actionLoading} className="bg-green-50 text-green-700 border-green-200" onClick={() => setConfirm({ id: app.id, type: "approve" })} />
                   )}
                   {app.status !== "rejected" && (
-                    <ActionBtn
-                      label="Reject" icon={<XCircle size={11} />}
-                      loading={isLoading(app.id, "reject")}
-                      disabled={!!actionLoading}
-                      className="bg-red-50 text-red-600 border-red-200"
-                      onClick={() => setConfirm({ id: app.id, type: "reject" })}
-                    />
+                    <ActionBtn label="Reject" icon={<XCircle size={11} />} loading={isLoading(app.id, "reject")} disabled={!!actionLoading} className="bg-red-50 text-red-600 border-red-200" onClick={() => setConfirm({ id: app.id, type: "reject" })} />
                   )}
                   {app.status !== "pending" && (
-                    <ActionBtn
-                      label="Reset" icon={<RotateCcw size={11} />}
-                      loading={isLoading(app.id, "reset")}
-                      disabled={!!actionLoading}
-                      className="bg-amber-50 text-amber-600 border-amber-200"
-                      onClick={() => setConfirm({ id: app.id, type: "reset" })}
-                    />
+                    <ActionBtn label="Reset" icon={<RotateCcw size={11} />} loading={isLoading(app.id, "reset")} disabled={!!actionLoading} className="bg-amber-50 text-amber-600 border-amber-200" onClick={() => setConfirm({ id: app.id, type: "reset" })} />
                   )}
-                  <ActionBtn
-                    label="Delete" icon={<Trash2 size={11} />}
-                    loading={isLoading(app.id, "delete")}
-                    disabled={!!actionLoading}
-                    className="bg-gray-100 text-gray-500 border-gray-200"
-                    onClick={() => setConfirm({ id: app.id, type: "delete" })}
-                  />
+                  <ActionBtn label="Delete" icon={<Trash2 size={11} />} loading={isLoading(app.id, "delete")} disabled={!!actionLoading} className="bg-gray-100 text-gray-500 border-gray-200" onClick={() => setConfirm({ id: app.id, type: "delete" })} />
                 </div>
               </div>
             ))}
@@ -401,11 +458,10 @@ function ApplicationsSection() {
         </>
       )}
 
-      {/* Confirm dialog */}
       <ConfirmDialog
         open={!!confirm}
         danger={confirm?.type === "delete"}
-        loading={!!actionLoading} 
+        loading={!!actionLoading}
         title={
           confirm?.type === "delete"  ? "Delete application?"  :
           confirm?.type === "approve" ? "Approve application?" :
@@ -418,15 +474,14 @@ function ApplicationsSection() {
             : confirm?.type === "approve"
             ? "The applicant will be notified and their account will be created."
             : confirm?.type === "reject"
-            ? "The applicant will be marked as rejected. You can undo this later."
+            ? "The applicant will be notified by email that their application was unsuccessful."
             : "This will move the application back to pending review."
         }
         showReasonField={confirm?.type === "reject"}
         reasonValue={rejectReason}
         onReasonChange={setRejectReason}
-
         onConfirm={() => confirm && runAction(confirm.id, confirm.type)}
-        onCancel={() => setConfirm(null)}
+        onCancel={() => { setConfirm(null); setRejectReason(""); }}
       />
     </div>
   );

@@ -1,85 +1,173 @@
 const { supabaseAdmin } = require("../config/db");
-const { sendApplicationRejectedEmail, sendApplicationApprovedEmail, sendApplicationReceivedEmail, sendAdminNewApplicationEmail } = require("../utils/mail");
+const {
+  sendApplicationRejectedEmail,
+  sendApplicationApprovedEmail,
+  sendApplicationReceivedEmail,
+  sendAdminNewApplicationEmail,
+} = require("../utils/mail");
 
-// ─── Apply to become a therapist (public) ─────────────────────────────────────
 exports.applyTherapist = async (req, res) => {
   try {
     const {
+      // ── Always present ──────────────────────────────────────────────────────
       fullName,
       email,
       phone,
-      qualifications,
+      coverLetter,
+      experienceLevel, // 'beginner' | 'intermediate' | 'expert'
+
+      // ── Beginner + Intermediate + Expert ───────────────────────────────────
+      schoolBackground, // where they studied
+      courseStudied, // beginner/intermediate — course name
+      comfortWithSpectrum, // beginner/intermediate — how they feel around autistic kids
+      irritationOrFrustration, // beginner/intermediate — frustration handling
+      whyTherapy, // beginner only — motivation
+
+      // ── Intermediate + Expert ───────────────────────────────────────────────
       yearsOfExperience,
       specialization,
-      licenseNumber,
       resumeLink,
-      coverLetter,
+
+      // ── Expert only ─────────────────────────────────────────────────────────
+      degreeLevel, // e.g. "M.Sc. ABA"
+      licenseNumber,
+      approachPhilosophy, // clinical philosophy
     } = req.body;
 
-    if (!fullName || !email || !phone || !qualifications) {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Valid email required." });
+    }
+    // ── Validation: only truly universal required fields ──────────────────────
+    if (!fullName || !email || !coverLetter || !experienceLevel) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: fullName, email, phone, qualifications",
+        message:
+          "Certain fields are required for all applicants: full name, email, cover letter, experience level",
       });
     }
 
-    // 1. Create application
+
+    
+    const VALID_LEVELS = ["beginner", "intermediate", "expert"];
+    if (!VALID_LEVELS.includes(experienceLevel)) {
+      return res.status(400).json({
+        success: false,
+        message: `experienceLevel must be one of: ${VALID_LEVELS.join(", ")}`,
+      });
+    }
+
+
+    if (experienceLevel === "intermediate" || experienceLevel === "expert") {
+      if (!yearsOfExperience) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Years of experience required." });
+      }
+    }
+    if (experienceLevel === "expert") {
+      if (!licenseNumber) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "License number required for expert applicants.",
+          });
+      }
+      if (!degreeLevel) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Degree level required for expert applicants.",
+          });
+      }
+    }
+
+    // ── Build qualifications string from level-specific fields ────────────────
+    // Consolidates the school/degree info into the existing qualifications column
+    const qualifications =
+      [
+        schoolBackground && `School: ${schoolBackground}`,
+        courseStudied && `Course: ${courseStudied}`,
+        degreeLevel && `Degree: ${degreeLevel}`,
+      ]
+        .filter(Boolean)
+        .join(" | ") || null;
+
+    // ── Store ALL level-specific answers in cover_letter as structured text ───
+    // This avoids needing new DB columns for each question while keeping answers readable
+    const fullCoverLetter = [
+      coverLetter,
+      comfortWithSpectrum &&
+        `\n\n[Comfort with spectrum children]\n${comfortWithSpectrum}`,
+      irritationOrFrustration &&
+        `\n\n[Handling frustration]\n${irritationOrFrustration}`,
+      whyTherapy && `\n\n[Motivation for therapy work]\n${whyTherapy}`,
+      approachPhilosophy &&
+        `\n\n[Clinical approach / philosophy]\n${approachPhilosophy}`,
+    ]
+      .filter(Boolean)
+      .join("");
+
     const { data, error } = await supabaseAdmin
       .from("therapist_applications")
       .insert([
         {
           full_name: fullName,
           email,
-          phone,
-          qualifications,
-          years_of_experience: yearsOfExperience || null,
+          phone: phone || null,
+          qualifications: qualifications || null,
+          years_of_experience: yearsOfExperience
+            ? parseInt(yearsOfExperience, 10)
+            : null,
           specialization: specialization || null,
           license_number: licenseNumber || null,
           resume_link: resumeLink || null,
-          cover_letter: coverLetter || null,
+          cover_letter: fullCoverLetter || null,
+          experience_level: experienceLevel,
           status: "pending",
         },
       ])
-      .select();
+      .select()
+      .single();
 
     if (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return res.status(500).json({ success: false, message: error.message });
     }
 
-    const applicationId = data[0].id;
+    const applicationId = data.id;
 
-    // 2. Send applicant confirmation email (NOT invite)
-    await sendApplicationReceivedEmail({
-      to: email,
-      name: fullName,
-      applicationId,
-    });
+    return res.status(201).json({ success: true, applicationId });
 
-    // 3. Send admin notification email
-    await sendAdminNewApplicationEmail({
-      to: process.env.EMAIL_FROM,
-      name: fullName,
-      email,
-      phone,
-      specialization,
-      yearsOfExperience,
-      licenseNumber,
-      applicationId,
-    });
+    Promise.allSettled([
+      sendApplicationReceivedEmail({
+        to: email,
+        name: fullName,
+        applicationId,
+        experienceLevel,
+      }).catch((e) =>
+        console.error("[applyTherapist] applicant email failed:", e.message),
+      ),
 
-    return res.status(201).json({
-      success: true,
-      applicationId,
-    });
+      sendAdminNewApplicationEmail({
+        to: process.env.EMAIL_FROM,
+        name: fullName,
+        email,
+        phone,
+        specialization,
+        yearsOfExperience,
+        licenseNumber,
+        experienceLevel,
+        applicationId,
+      }).catch((e) =>
+        console.error("[applyTherapist] admin email failed:", e.message),
+      ),
+    ]);
   } catch (err) {
     console.error("[applyTherapist]", err);
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -91,7 +179,8 @@ exports.getAllApplications = async (req, res) => {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) return res.status(500).json({ success: false, message: error.message });
+    if (error)
+      return res.status(500).json({ success: false, message: error.message });
     return res.status(200).json({ success: true, data });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -107,34 +196,40 @@ exports.getAllTherapistsAndApplicants = async (req, res) => {
     // 1. Confirmed therapist profiles
     const { data: therapists, error: tErr } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, email, phone, specialization, status, avatar_url, created_at")
+      .select(
+        "id, full_name, email, phone, specialization, status, avatar_url, created_at",
+      )
       .eq("role", "therapist")
       .order("created_at", { ascending: false });
 
-    if (tErr) return res.status(500).json({ success: false, message: tErr.message });
+    if (tErr)
+      return res.status(500).json({ success: false, message: tErr.message });
 
     // 2. Applications that haven't been converted to a profile yet
     //    We exclude emails that already exist in profiles to avoid duplicates
-    const therapistEmails = (therapists || []).map(t => t.email);
+    const therapistEmails = (therapists || []).map((t) => t.email);
 
     const { data: applications, error: aErr } = await supabaseAdmin
       .from("therapist_applications")
-      .select("id, full_name, email, phone, specialization, years_of_experience, status, created_at")
+      .select(
+        "id, full_name, email, phone, specialization, years_of_experience, status, created_at",
+      )
       .order("created_at", { ascending: false });
 
-    if (aErr) return res.status(500).json({ success: false, message: aErr.message });
+    if (aErr)
+      return res.status(500).json({ success: false, message: aErr.message });
 
     // Map therapist profiles to unified shape
-    const therapistRows = (therapists || []).map(t => ({
-      id:             t.id,
-      full_name:      t.full_name,
-      email:          t.email,
-      phone:          t.phone || "—",
+    const therapistRows = (therapists || []).map((t) => ({
+      id: t.id,
+      full_name: t.full_name,
+      email: t.email,
+      phone: t.phone || "—",
       specialization: t.specialization || "—",
-      avatar_url:     t.avatar_url || null,
-      status:         t.status,          // active | pending | suspended
-      source:         "profile",         // came from profiles table
-      joined:         t.created_at,
+      avatar_url: t.avatar_url || null,
+      status: t.status, // active | pending | suspended
+      source: "profile", // came from profiles table
+      joined: t.created_at,
     }));
 
     // Map applications to unified shape
@@ -142,18 +237,18 @@ exports.getAllTherapistsAndApplicants = async (req, res) => {
     // - pending/rejected → "training" display status
     // - approved but not yet a profile → "training" (edge case)
     const applicationRows = (applications || [])
-      .filter(a => !therapistEmails.includes(a.email))
-      .map(a => ({
-        id:             a.id,
-        full_name:      a.full_name,
-        email:          a.email,
-        phone:          a.phone || "—",
+      .filter((a) => !therapistEmails.includes(a.email))
+      .map((a) => ({
+        id: a.id,
+        full_name: a.full_name,
+        email: a.email,
+        phone: a.phone || "—",
         specialization: a.specialization || "—",
-        avatar_url:     null,
-        status:         "training",      // always "training" until promoted to profile
-        application_status: a.status,   // pending | approved | rejected (actual app status)
-        source:         "application",   // came from therapist_applications table
-        joined:         a.created_at,
+        avatar_url: null,
+        status: "training", // always "training" until promoted to profile
+        application_status: a.status, // pending | approved | rejected (actual app status)
+        source: "application", // came from therapist_applications table
+        joined: a.created_at,
       }));
 
     return res.status(200).json({
@@ -207,7 +302,8 @@ exports.updateApplicationStatus = async (req, res) => {
     if (existingProfile) {
       return res.status(409).json({
         success: false,
-        message: "This user is already a therapist. Application status cannot be modified.",
+        message:
+          "This user is already a therapist. Application status cannot be modified.",
       });
     }
 
@@ -243,7 +339,10 @@ exports.updateApplicationStatus = async (req, res) => {
         });
       }
     } catch (emailErr) {
-      console.error("[updateApplicationStatus] Email send failed:", emailErr.message);
+      console.error(
+        "[updateApplicationStatus] Email send failed:",
+        emailErr.message,
+      );
     }
 
     return res.status(200).json({ success: true, data });
@@ -252,7 +351,7 @@ exports.updateApplicationStatus = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
- 
+
 exports.promoteToTherapist = async (req, res) => {
   try {
     const { id } = req.params;
@@ -266,21 +365,25 @@ exports.promoteToTherapist = async (req, res) => {
       .single();
 
     if (appErr || !app) {
-      return res.status(404).json({ success: false, message: "Application not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Application not found" });
     }
 
     // 2. ── Status guard ──────────────────────────────────────────────────────
     if (app.status === "rejected") {
       return res.status(400).json({
         success: false,
-        message: "This application has been rejected and cannot be promoted. Reset it to pending first if you wish to reconsider.",
+        message:
+          "This application has been rejected and cannot be promoted. Reset it to pending first if you wish to reconsider.",
       });
     }
 
     if (app.status === "pending") {
       return res.status(400).json({
         success: false,
-        message: "This application is still pending. Please approve it before promoting to therapist.",
+        message:
+          "This application is still pending. Please approve it before promoting to therapist.",
       });
     }
 
@@ -288,61 +391,63 @@ exports.promoteToTherapist = async (req, res) => {
 
     // 3. Guard — already promoted?
     const { data: existing } = await supabaseAdmin
-      .from("profiles")
+      .from("therapist_applications")
       .select("id")
-      .eq("email", app.email)
+      .eq("email", email)
+      .eq("status", "pending")
       .maybeSingle();
 
     if (existing) {
       return res.status(409).json({
         success: false,
-        message: "A therapist profile for this email already exists.",
+        message: "An application with this email is already under review.",
       });
     }
 
     // 4. Create Supabase auth user
     const tempPassword = crypto.randomUUID();
-    const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
-      email: app.email,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: { full_name: app.full_name },
-    });
+    const { data: authData, error: authErr } =
+      await supabaseAdmin.auth.admin.createUser({
+        email: app.email,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: { full_name: app.full_name },
+      });
 
     if (authErr) throw authErr;
     const userId = authData.user.id;
 
     // 5. Insert therapist profile
-const { error: profileErr } = await supabaseAdmin
-  .from("profiles")
-  .upsert({
-    id: userId,
-    full_name: app.full_name,
-    email: app.email,
-    phone: app.phone || null,
-    specialization: app.specialization || null,
-    role: "therapist",
-    status: "active",
-  });
+    const { error: profileErr } = await supabaseAdmin.from("profiles").upsert({
+      id: userId,
+      full_name: app.full_name,
+      email: app.email,
+      phone: app.phone || null,
+      specialization: app.specialization || null,
+      role: "therapist",
+      status: "active",
+    });
     if (profileErr) {
       await supabaseAdmin.auth.admin.deleteUser(userId);
       throw profileErr;
     }
 
     // 6. Generate invite link
-    const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
-      type:  "recovery",
-      email: app.email,
-    });
+    const { data: linkData, error: linkErr } =
+      await supabaseAdmin.auth.admin.generateLink({
+        type: "recovery",
+        email: app.email,
+      });
     if (linkErr) throw linkErr;
 
-    const url   = new URL(linkData.properties.action_link);
-    const token = url.searchParams.get("token") || linkData.properties.hashed_token;
+    const url = new URL(linkData.properties.action_link);
+    const token =
+      url.searchParams.get("token") || linkData.properties.hashed_token;
 
     // 7. Send branded approval + invite email
     await sendApplicationApprovedEmail({
-      to:          app.email,
-      name:        app.full_name,
+      to: app.email,
+      name: app.full_name,
       inviteToken: token,
     });
 
@@ -350,14 +455,14 @@ const { error: profileErr } = await supabaseAdmin
     await supabaseAdmin
       .from("therapist_applications")
       .update({
-        status:       "approved",
-        updated_at:   new Date().toISOString(),
+        status: "approved",
+        updated_at: new Date().toISOString(),
       })
       .eq("id", id);
 
     return res.status(201).json({
-      success:     true,
-      message:     `${app.full_name} has been promoted to therapist. Invite email sent.`,
+      success: true,
+      message: `${app.full_name} has been promoted to therapist. Invite email sent.`,
       therapistId: userId,
     });
   } catch (err) {
@@ -378,7 +483,9 @@ exports.deleteApplication = async (req, res) => {
       .single();
 
     if (fetchErr || !existing) {
-      return res.status(404).json({ success: false, message: "Application not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Application not found" });
     }
 
     const { error } = await supabaseAdmin
@@ -386,9 +493,12 @@ exports.deleteApplication = async (req, res) => {
       .delete()
       .eq("id", id);
 
-    if (error) return res.status(500).json({ success: false, message: error.message });
+    if (error)
+      return res.status(500).json({ success: false, message: error.message });
 
-    return res.status(200).json({ success: true, message: "Application deleted" });
+    return res
+      .status(200)
+      .json({ success: true, message: "Application deleted" });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
@@ -403,7 +513,12 @@ exports.updateTherapistStatus = async (req, res) => {
     const VALID = ["active", "pending", "suspended"];
 
     if (!VALID.includes(status)) {
-      return res.status(400).json({ success: false, message: `Invalid status. Must be: ${VALID.join(", ")}` });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: `Invalid status. Must be: ${VALID.join(", ")}`,
+        });
     }
 
     const { data, error } = await supabaseAdmin
@@ -415,7 +530,10 @@ exports.updateTherapistStatus = async (req, res) => {
       .single();
 
     if (error) {
-      if (error.code === "PGRST116") return res.status(404).json({ success: false, message: "Therapist not found" });
+      if (error.code === "PGRST116")
+        return res
+          .status(404)
+          .json({ success: false, message: "Therapist not found" });
       return res.status(500).json({ success: false, message: error.message });
     }
 

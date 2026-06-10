@@ -34,7 +34,7 @@ function decodeToken(token) {
   if (!token) return null;
   try {
     const b64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = b64.padEnd(b64.length + (4 - (b64.length % 4)) % 4, "=");
+    const padded = b64.padEnd(b64.length + ((4 - (b64.length % 4)) % 4), "=");
     return JSON.parse(atob(padded));
   } catch {
     return null;
@@ -59,23 +59,23 @@ const useAuthStore = create(
   persist(
     (set, get) => ({
       // ── State ──
-      user: null,       // lives in memory only — never persisted
-      session: null,    // { access_token, refresh_token, expires_at } — persisted
-      status: "idle",   // "idle" | "loading" | "error"
+      user: null, // lives in memory only — never persisted
+      session: null, // { access_token, refresh_token, expires_at } — persisted
+      status: "idle", // "idle" | "loading" | "error"
       error: null,
 
-      // ── Derived 
+      // ── Derived
       isAuthenticated: () => {
         const token = get().session?.access_token;
         return !!token && !isTokenExpired(token);
       },
-      isAdmin:     () => get().user?.role === "admin",
+      isAdmin: () => get().user?.role === "admin",
       isTherapist: () => get().user?.role === "therapist",
       accessToken: () => get().session?.access_token ?? null,
 
       // ── Internal ───────────────────────────────────────────────────────────
       _setLoading: () => set({ status: "loading", error: null }),
-      _setError:   (msg) => set({ status: "error", error: msg }),
+      _setError: (msg) => set({ status: "error", error: msg }),
       _clearError: () => set({ error: null }),
 
       // Called on app mount to rehydrate user profile from the server.
@@ -86,19 +86,26 @@ const useAuthStore = create(
 
         if (!token || isTokenExpired(token)) {
           // Try refresh before giving up
-          try { await get().refreshToken(); }
-          catch { get().logout(); return null; }
+          try {
+            await get().refreshToken();
+          } catch {
+            get().logout();
+            return null;
+          }
         }
 
         const userId = getUserIdFromToken(get().session?.access_token);
-        if (!userId) { get().logout(); return null; }
+        if (!userId) {
+          get().logout();
+          return null;
+        }
 
         get()._setLoading();
         try {
           const data = await unwrap(
             await fetch(`${API}/api/auth/${userId}/me`, {
               headers: authHeaders(get().accessToken()),
-            })
+            }),
           );
           set({ user: data.user, status: "idle" });
           return data.user;
@@ -122,11 +129,11 @@ const useAuthStore = create(
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ email, password }),
-            })
+            }),
           );
           set({
             session: data.session, // ← only tokens hit localStorage
-            user: data.user,       // ← stays in memory via React state
+            user: data.user, // ← stays in memory via React state
             status: "idle",
             error: null,
           });
@@ -146,7 +153,7 @@ const useAuthStore = create(
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ email, full_name, password }),
-            })
+            }),
           );
           set({
             session: data.session,
@@ -177,7 +184,7 @@ const useAuthStore = create(
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ refresh_token: session.refresh_token }),
-            })
+            }),
           );
           set({ session: data.session });
           return data.session;
@@ -196,7 +203,7 @@ const useAuthStore = create(
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ email }),
-            })
+            }),
           );
           set({ status: "idle" });
           return data;
@@ -215,7 +222,7 @@ const useAuthStore = create(
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token, password }),
-            })
+            }),
           );
           set({ status: "idle" });
           return data;
@@ -229,42 +236,23 @@ const useAuthStore = create(
       therapistApplicationError: null,
 
       // ── applyTherapist ──────────────────────────────────────────────────────
-      applyTherapist: async ({
-        fullName,
-        email,
-        phone,
-        qualifications,
-        yearsOfExperience,
-        specialization,
-        licenseNumber,
-        resumeLink,
-        coverLetter,
-      }) => {
-        get()._setLoading();
-        set({ therapistApplicationLoading: true, therapistApplicationError: null });
+      applyTherapist: async (formData) => {
+        set({
+          therapistApplicationLoading: true,
+          therapistApplicationError: null,
+        });
         try {
           const data = await unwrap(
             await fetch(`${API}/api/therapist/applications`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                fullName,
-                email,
-                phone,
-                qualifications,
-                yearsOfExperience,
-                specialization,
-                licenseNumber,
-                resumeLink,
-                coverLetter,
-              }),
-            })
+              body: JSON.stringify(formData), // pass the whole form object as-is
+            }),
           );
-          set({ status: "idle", therapistApplicationLoading: false });
+          set({ therapistApplicationLoading: false });
           return data;
         } catch (err) {
           set({
-            status: "error",
             therapistApplicationLoading: false,
             therapistApplicationError: err.message,
           });
@@ -281,7 +269,7 @@ const useAuthStore = create(
               method: "POST",
               headers: authHeaders(get().accessToken()),
               body: JSON.stringify({ email, full_name, phone, specialization }),
-            })
+            }),
           );
           set({ status: "idle" });
           return data;
@@ -299,7 +287,7 @@ const useAuthStore = create(
             await fetch(`${API}/api/auth/resend-invite/${therapistId}`, {
               method: "POST",
               headers: authHeaders(get().accessToken()),
-            })
+            }),
           );
           set({ status: "idle" });
           return data;
@@ -320,8 +308,8 @@ const useAuthStore = create(
         session: state.session, // access_token + refresh_token only
         // user: intentionally omitted
       }),
-    }
-  )
+    },
+  ),
 );
 
 export default useAuthStore;

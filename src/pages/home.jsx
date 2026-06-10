@@ -326,7 +326,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="bg-[#E48E15] text-white rounded-[40px] p-8 lg:p-16 grid lg:grid-cols-12 gap-8 items-center relative overflow-hidden">
             <div className="lg:col-span-8 space-y-4 relative z-10">
-              <span className="inline-block px-3 py-1 bg-black/10 text-xs font-medium tracking-wide rounded-full text-[#000000]/80">
+              <span className="inline-block px-3 py-1 bg-black/10 text-xs font-medium tracking-wide rounded-full text-[#fff]/80">
                 For Professionals
               </span>
               <h2 className="text-[24px] lg:text-4xl font-bold tracking-tight">
@@ -339,12 +339,12 @@ export default function Home() {
               </p>
             </div>
             <div className="lg:col-span-4 lg:text-right relative z-10">
-              <Link
-                to="/apply-therapist"
-                className="inline-block px-6 py-3.5 bg-[#000] text-white font-semibold rounded-full hover:bg-[#d47e05] transition-colors text-sm"
+              <a
+                href="/apply-therapist"
+                className="inline-block px-6 py-3.5 bg-[#fff] text-black font-semibold rounded-full hover:bg-[#d47e05] transition-colors text-sm"
               >
                 Apply to Become a Therapist →
-              </Link>
+              </a>
             </div>
             {/* Soft decorative ambient glow */}
             <div className="absolute right-0 bottom-0 w-64 h-64 bg-[#C5FF4D]/10 rounded-full filter blur-3xl pointer-events-none" />

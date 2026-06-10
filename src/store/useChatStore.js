@@ -3,7 +3,7 @@ import { create } from "zustand";
 const INITIAL_MESSAGE = {
   role: "assistant",
   content:
-    "Hi there 👋 I’m Stephanie, the support assistant for St. Stephen’s Family. \n\ I can help with questions about our services, appointments, and how things work here. Please note, I’m not a therapist and can’t provide medical advice or diagnoses. \n\ <b>Your conversation is handled securely and is only used to support your request and improve our services. It is not used for any illegal purposes. What can I help you with today?</b>",
+    "Hi there 👋 I’m Stephanie, the support assistant for St. Stephen’s Family. I can help with questions about our services, appointments, and how things work here. Please note, I’m not a therapist and can’t provide medical advice or diagnoses. \n\<b>Your session is not permanently stored. If you refresh or close this chat, your current conversation will be cleared and will not continue in a new session.</b> What can I help you with today?",
 };
 
 export const useChatStore = create((set, get) => ({
