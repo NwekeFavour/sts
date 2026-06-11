@@ -166,6 +166,152 @@ async function sendApplicationReviewEmail({ to, name, inviteToken }) {
   });
 }
 
+async function sendFormEmail({ to, parentName, childName, advice, uploadUrl }) {
+  await sendEmail({
+    to,
+    name: parentName,
+    subject: `Your assessment is ready — ${childName} · ${BRAND.name}`,
+    htmlContent: baseTemplate({
+      preheader: `Our team has reviewed ${childName}'s request and shared their observations below.`,
+      body: `
+        <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:${BRAND.accent};text-transform:uppercase;letter-spacing:0.8px;">
+          Clinical Assessment
+        </p>
+ 
+        <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:${BRAND.dark};line-height:1.3;">
+          A note from our team
+        </h1>
+ 
+        <p style="font-size:14px;color:#444;line-height:1.7;margin:0 0 16px;">
+          Hi ${parentName},
+        </p>
+ 
+        <p style="font-size:14px;color:#444;line-height:1.7;margin:0 0 24px;">
+          Our team has carefully reviewed the information and video you shared regarding
+          <strong>${childName}</strong>. Below are our observations and recommended next steps.
+        </p>
+ 
+        <!-- Advice box -->
+        <div style="background:${BRAND.light};border-left:4px solid ${BRAND.primary};border-radius:0 10px 10px 0;padding:20px 22px;margin-bottom:28px;">
+          <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${BRAND.primary};text-transform:uppercase;letter-spacing:0.08em;">
+            Assessment Notes
+          </p>
+          <p style="margin:0;font-size:14px;color:#374151;line-height:1.8;white-space:pre-wrap;">${escapeHtml(advice)}</p>
+        </div>
+ 
+        <!-- Lab upload section -->
+        <div style="border:1px solid ${BRAND.border};border-radius:14px;overflow:hidden;margin-bottom:28px;">
+ 
+          <div style="background:${BRAND.primary};padding:14px 18px;">
+            <p style="margin:0;font-size:13px;font-weight:700;color:#fff;">
+              📋 Optional: Upload Lab Results
+            </p>
+          </div>
+ 
+          <div style="padding:20px 22px;">
+            <p style="margin:0 0 14px;font-size:14px;color:#444;line-height:1.7;">
+              If you decide to follow the guidance above, please upload your lab results using 
+              the secure button below. This helps ${childName}'s therapist prepare fully before 
+              the first session.
+            </p>
+            <p style="margin:0 0 20px;font-size:13px;color:${BRAND.muted};line-height:1.6;">
+              <strong>This step is entirely optional.</strong> You are welcome to proceed to 
+              therapy without uploading any files — the link is simply there if you need it.
+            </p>
+ 
+            ${ctaButton("📤 Upload Lab Results", uploadUrl)}
+ 
+            <p style="margin:4px 0 4px;font-size:11px;color:#aaa;">Can't click the button? Copy this link:</p>
+            <p style="margin:0;font-size:11px;color:#aaa;word-break:break-all;">${uploadUrl}</p>
+          </div>
+        </div>
+ 
+        <!-- Security note -->
+        <div style="background:#F0FAF0;border:1px solid #C8E6C9;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
+          <p style="margin:0;font-size:13px;color:#2E7D32;line-height:1.7;">
+            🔒 <strong>Your privacy is protected.</strong> Any file you upload is encrypted in 
+            transit and stored securely. It will only be accessible to your assigned therapist 
+            and our admin team.
+          </p>
+        </div>
+ 
+        ${infoPill("🔗", "This upload link is <strong>single-use</strong> and expires once a file has been submitted.")}
+        ${infoPill("💬", `Questions? Reply to this email or contact us at ${BRAND.supportEmail}`)}
+      `,
+    }),
+  });
+}
+
+// ─── sendLabUploadConfirmationEmail ───────────────────────────────────────────
+// Sent automatically after the parent successfully uploads their lab results
+// via the public /lab-upload/:token page.
+//
+// params:
+//   to          string  parent email
+//   parentName  string
+//   childName   string
+
+async function sendLabUploadConfirmationEmail({ to, parentName, childName }) {
+  await sendEmail({
+    to,
+    name: parentName,
+    subject: `Lab results received — ${childName} · ${BRAND.name}`,
+    htmlContent: baseTemplate({
+      preheader: `We've received the lab results you uploaded for ${childName}.`,
+      body: `
+        <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#2E7D32;text-transform:uppercase;letter-spacing:0.8px;">
+          Upload Confirmed
+        </p>
+
+        <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:${BRAND.dark};line-height:1.3;">
+          Lab results received ✅
+        </h1>
+
+        <p style="font-size:14px;color:#444;line-height:1.7;margin:0 0 16px;">
+          Hi ${parentName},
+        </p>
+
+        <p style="font-size:14px;color:#444;line-height:1.7;margin:0 0 24px;">
+          We've successfully received the lab results you uploaded for
+          <strong>${childName}</strong>. Our clinical team will review the
+          information you've provided as part of the onboarding process.
+        </p>
+
+        <div style="background:#FFF8E1;border:1px solid #FFE082;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+          <p style="margin:0;font-size:13px;color:#8A6D00;line-height:1.7;">
+            💳 <strong>Next step:</strong> Before we can assign a therapist to
+            ${childName}, you'll need to complete payment for access to therapy
+            services. Once payment is confirmed, we'll match your child with a
+            suitable therapist and notify you when the assignment is complete.
+          </p>
+        </div>
+
+        <div style="text-align:center;margin:0 0 24px;">
+          <a
+            href="${BRAND.website}/payment"
+            style="display:inline-block;background:${BRAND.primary};color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;"
+          >
+            Complete Payment
+          </a>
+        </div>
+
+        ${infoPill("🔒", "Your file is stored securely and is only accessible to our clinical team.")}
+        ${infoPill("💬", `Questions? Write to us at ${BRAND.supportEmail}`)}
+      `,
+    }),
+  });
+}
+
+// ─── escapeHtml (needed for advice text) ─────────────────────────────────────
+// Only add this if it's not already defined elsewhere in the file.
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 // ─── 2. Password reset ───────────────────────────────────────────────────────
 async function sendPasswordResetEmail({ to, name, resetToken }) {
   const link = `${process.env.FRONTEND_URL}/invite/reset-password?token=${resetToken}`;
@@ -570,6 +716,235 @@ async function sendParentRequestReceivedEmail({
   });
 }
 
+async function sendTherapistAssignedToParentEmail({
+  to,
+  parentName,
+  childName,
+  therapistName,
+  therapistEmail,
+  therapistPhone,
+  therapistSpecialty,
+}) {
+  await sendEmail({
+    to,
+    name: parentName,
+    subject: `Your therapist has been assigned — ${childName} · ${BRAND.name}`,
+    htmlContent: baseTemplate({
+      preheader: `${therapistName} has been matched to ${childName}. Here's how to get in touch.`,
+      body: `
+        <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#2E7D32;text-transform:uppercase;letter-spacing:0.8px;">
+          Therapist Assigned
+        </p>
+ 
+        <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:${BRAND.dark};line-height:1.3;">
+          You're all set, ${parentName} 🎉
+        </h1>
+ 
+        <p style="font-size:14px;color:#444;line-height:1.7;margin:0 0 20px;">
+          Thank you for completing your payment. We've matched <strong>${childName}</strong> with
+          a therapist who is the right fit for their needs. Your journey with
+          <strong>${BRAND.name}</strong> officially begins now.
+        </p>
+ 
+        <!-- Therapist card -->
+        <div style="border:1px solid ${BRAND.border};border-radius:14px;overflow:hidden;margin-bottom:28px;">
+ 
+          <div style="background:${BRAND.primary};padding:14px 20px;">
+            <p style="margin:0;font-size:13px;font-weight:700;color:#fff;letter-spacing:0.3px;">
+              Your assigned therapist
+            </p>
+          </div>
+ 
+          <div style="padding:22px 22px 18px;">
+            <!-- Avatar + name row -->
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:18px;">
+              <tr>
+                <td valign="middle" width="52" style="padding-right:14px;">
+                  <div style="width:48px;height:48px;border-radius:50%;background:${BRAND.primary};color:#fff;font-size:18px;font-weight:700;line-height:48px;text-align:center;">
+                    ${therapistName
+                      .split(" ")
+                      .map((w) => w[0])
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2)}
+                  </div>
+                </td>
+                <td valign="middle">
+                  <p style="margin:0 0 2px;font-size:16px;font-weight:700;color:${BRAND.dark};">${therapistName}</p>
+                  <p style="margin:0;font-size:13px;color:${BRAND.muted};">${therapistSpecialty}</p>
+                </td>
+              </tr>
+            </table>
+ 
+            <!-- Contact details -->
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+                <td style="padding-bottom:10px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" width="100%"
+                    style="background:${BRAND.light};border:1px solid ${BRAND.border};border-radius:8px;padding:10px 14px;">
+                    <tr>
+                      <td width="20" style="padding-right:10px;font-size:15px;">📧</td>
+                      <td>
+                        <p style="margin:0 0 1px;font-size:11px;color:${BRAND.muted};text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Email</p>
+                        <a href="mailto:${therapistEmail}" style="font-size:13px;color:${BRAND.primary};text-decoration:none;font-weight:600;">${therapistEmail}</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              ${
+                therapistPhone
+                  ? `
+              <tr>
+                <td>
+                  <table role="presentation" cellpadding="0" cellspacing="0" width="100%"
+                    style="background:${BRAND.light};border:1px solid ${BRAND.border};border-radius:8px;padding:10px 14px;">
+                    <tr>
+                      <td width="20" style="padding-right:10px;font-size:15px;">📞</td>
+                      <td>
+                        <p style="margin:0 0 1px;font-size:11px;color:${BRAND.muted};text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Phone / WhatsApp</p>
+                        <a href="tel:${therapistPhone}" style="font-size:13px;color:${BRAND.primary};text-decoration:none;font-weight:600;">${therapistPhone}</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>`
+                  : ""
+              }
+            </table>
+          </div>
+        </div>
+ 
+        <!-- What to expect -->
+        <div style="background:${BRAND.light};border:1px solid ${BRAND.border};border-radius:12px;padding:18px 20px;margin-bottom:24px;">
+          <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:${BRAND.dark};">What happens next</p>
+          <ul style="margin:0;padding-left:18px;font-size:13px;color:#444;line-height:1.9;">
+            <li>Reach out to ${therapistName} using the contact details above to schedule your first session</li>
+            <li>Sessions typically last 45–60 minutes and are tailored to ${childName}'s needs</li>
+            <li>Your therapist will keep our admin team updated on progress throughout the programme</li>
+          </ul>
+        </div>
+ 
+        ${infoPill("💛", `We're rooting for you and ${childName} every step of the way.`)}
+        ${infoPill("💬", `Questions? Write to us at ${BRAND.supportEmail}`)}
+      `,
+    }),
+  });
+}
+
+// ─── sendPatientAssignedToTherapistEmail ──────────────────────────────────────
+// Sent to the therapist when a patient is assigned to them.
+// Includes full patient context so they can prepare.
+//
+// params:
+//   to             string   therapist email
+//   therapistName  string
+//   parentName     string
+//   childName      string
+//   childAge       number | null
+//   location       string | null
+//   notes          string | null   (behavioural notes from the request)
+//   parentEmail    string | null
+
+async function sendPatientAssignedToTherapistEmail({
+  to,
+  therapistName,
+  parentName,
+  childName,
+  childAge,
+  location,
+  notes,
+  parentEmail,
+}) {
+  await sendEmail({
+    to,
+    name: therapistName,
+    subject: `New patient assigned — ${childName} · ${BRAND.name}`,
+    htmlContent: baseTemplate({
+      preheader: `A new patient has been assigned to your caseload: ${childName}, ${childAge ? `age ${childAge}` : ""}.`,
+      body: `
+        <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:${BRAND.accent};text-transform:uppercase;letter-spacing:0.8px;">
+          New Patient
+        </p>
+ 
+        <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:${BRAND.dark};line-height:1.3;">
+          You have a new patient, ${therapistName.split(" ")[0]}
+        </h1>
+ 
+        <p style="font-size:14px;color:#444;line-height:1.7;margin:0 0 24px;">
+          A patient has been matched to you and is ready to begin their therapeutic journey.
+          Please review the details below and reach out to the family to schedule the first session.
+        </p>
+ 
+        <!-- Patient summary card -->
+        <div style="border:1px solid ${BRAND.border};border-radius:14px;overflow:hidden;margin-bottom:24px;">
+ 
+          <div style="background:${BRAND.primary};padding:14px 20px;">
+            <p style="margin:0;font-size:13px;font-weight:700;color:#fff;">Patient summary</p>
+          </div>
+ 
+          <div style="padding:20px 22px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+              <tr>
+                <td style="padding-bottom:10px;">
+                  ${infoRow("👦", "Child's name", childName)}
+                </td>
+              </tr>
+              ${childAge ? `<tr><td style="padding-bottom:10px;">${infoRow("🎂", "Age", `${childAge} years old`)}</td></tr>` : ""}
+              ${location ? `<tr><td style="padding-bottom:10px;">${infoRow("📍", "Location", location)}</td></tr>` : ""}
+              <tr>
+                <td style="padding-bottom:10px;">
+                  ${infoRow("👤", "Parent / Guardian", parentName)}
+                </td>
+              </tr>
+              ${parentEmail ? `<tr><td>${infoRow("📧", "Parent email", `<a href="mailto:${parentEmail}" style="color:${BRAND.primary};text-decoration:none;">${parentEmail}</a>`)}</td></tr>` : ""}
+            </table>
+          </div>
+        </div>
+ 
+        <!-- Behavioural notes -->
+        ${
+          notes
+            ? `
+        <div style="background:${BRAND.light};border-left:4px solid ${BRAND.primary};border-radius:0 10px 10px 0;padding:16px 20px;margin-bottom:24px;">
+          <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${BRAND.primary};text-transform:uppercase;letter-spacing:0.08em;">
+            Background notes from parent
+          </p>
+          <p style="margin:0;font-size:13px;color:#374151;line-height:1.8;white-space:pre-wrap;">${escapeHtml(notes)}</p>
+        </div>`
+            : ""
+        }
+ 
+        <!-- Action -->
+        <div style="background:#FFF8E6;border:1px solid #F0D080;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
+          <p style="margin:0;font-size:13px;color:#7A5C00;line-height:1.7;">
+            ⏱ <strong>Next step:</strong> Please contact ${parentName} within <strong>2 business days</strong>
+            to introduce yourself and schedule the first session.
+          </p>
+        </div>
+ 
+        ${infoPill("📋", "You can view any uploaded lab results in your therapist portal.")}
+        ${infoPill("💬", `Need support? Contact us at ${BRAND.supportEmail}`)}
+      `,
+    }),
+  });
+}
+
+// ─── infoRow helper (used only in assignment emails) ─────────────────────────
+function infoRow(icon, label, value) {
+  return `
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%"
+      style="background:${BRAND.light};border:1px solid ${BRAND.border};border-radius:8px;padding:10px 14px;">
+      <tr>
+        <td width="24" style="padding-right:10px;font-size:15px;">${icon}</td>
+        <td>
+          <p style="margin:0 0 1px;font-size:11px;color:${BRAND.muted};text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">${label}</p>
+          <p style="margin:0;font-size:13px;color:${BRAND.dark};font-weight:600;">${value}</p>
+        </td>
+      </tr>
+    </table>`;
+}
+
 module.exports = {
   sendAdminNewApplicationEmail,
   sendApplicationReceivedEmail,
@@ -578,7 +953,11 @@ module.exports = {
   sendApplicationApprovedEmail,
   sendApplicationRejectedEmail,
   sendApplicationStatusEmail,
+  sendFormEmail,
+  sendLabUploadConfirmationEmail,
   // ── new ──
   sendAdminNewHelpRequestEmail,
   sendParentRequestReceivedEmail,
+  sendTherapistAssignedToParentEmail,
+  sendPatientAssignedToTherapistEmail,
 };

@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors    = require("cors");
 const helmet  = require("helmet");
+const formsRouter = require("./routes/forms")
 
 const app = express();
 
@@ -57,8 +58,9 @@ app.use("/api/therapist",                  require("./routes/therapistApplicatio
 app.use("/api/admin",                      require("./routes/admin"));
 app.use("/api/admin/therapist-application",require("./routes/therapistApplication"));
 app.use("/api/requests", require("./routes/request"));
+app.use('/api/forms', formsRouter);
 
-// ─── Error handler ────────────────────────────────────────────────────────────
+// ─── Error handler ─────────────────────────────────── ─────────────────────────
 app.use((err, _req, res, _next) => {
   console.error("[Unhandled error]", err);
   res.status(500).json({ error: "Internal server error" });

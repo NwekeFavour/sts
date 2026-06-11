@@ -42,6 +42,18 @@ export function AdminRoute({ children }) {
   return children;
 }
 
+
+export function GuestRoute({ children }) {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated());
+  const status = useAuthStore((state) => state.status);
+
+  if (status === "loading") {
+    return <div>Loading...</div>;
+  }
+
+  return isAuthenticated ? <Navigate to="/admin" replace /> : children;
+}
+
 /**
  * TherapistRoute - Protects routes for therapist users only
  * Redirects to /login if:

@@ -111,8 +111,8 @@ router.get('/requests', ...guard, async (req, res) => {
     let query = supabaseAdmin
       .from('requests')
       .select(`
-        id, parent_name, child_name, location, child_age,
-        notes, video_url, status, created_at, assigned_at,
+        id, parent_name, parent_email, parent_phone, child_gender, child_name, location, child_age,
+        primary_concerns, video_key, status, created_at, assigned_at,
         therapist:profiles!therapist_id(id, full_name, specialization)
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -226,30 +226,6 @@ router.patch('/reports/:id/review', ...guard, async (req, res) => {
   }
 });
 
-// ─── GET /api/admin/forms ─────────────────────────────────────────────────────
-router.get('/forms', ...guard, async (req, res) => {
-  const { status } = req.query;
-  try {
-    let query = supabaseAdmin
-      .from('forms')
-      .select(`
-        id, form_type, status, file_url, submitted_at, created_at,
-        parent:profiles!parent_id(id, full_name, email),
-        request:requests!request_id(id, child_name)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (status) query = query.eq('status', status);
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return res.status(200).json({ forms: data });
-  } catch (err) {
-    console.error('[GET /admin/forms]', err);
-    return res.status(500).json({ error: 'Failed to fetch forms' });
-  }
-});
-
 // ─── GET /api/admin/activity ──────────────────────────────────────────────────
 router.get('/activity', ...guard, async (req, res) => {
   try {
@@ -276,3 +252,215 @@ function timeAgo(date) {
 }
 
 module.exports = router;
+
+
+// ─── GET /api/admin/applications ─────────────────────────────────────────────
+router.get('/applications', ...guard, async (req, res) => {
+  const { status } = req.query;
+  try {
+    let query = supabaseAdmin
+      .from('therapist_applications')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (status) query = query.eq('status', status);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return res.status(200).json({ applications: data });
+  } catch (err) {
+    console.error('[GET /admin/applications]', err);
+    return res.status(500).json({ error: 'Failed to fetch applications' });
+  }
+});
+
+// ─── PATCH /api/admin/applications/:id/approve ───────────────────────────────
+// Approves the application AND auto-creates a therapist profile + sends invite
+router.patch('/applications/:id/approve', ...guard, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // 1. Fetch the application
+    const { data: app, error: appErr } = await supabaseAdmin
+      .from('therapist_applications')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (appErr || !app) return res.status(404).json({ error: 'Application not found' });
+    if (app.status !== 'pending') return res.status(400).json({ error: `Application is already ${app.status}` });
+
+    // 2. Create Supabase auth user
+    const tempPassword = require('crypto').randomUUID();
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
+      email: app.email,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: { full_name: app.full_name },
+    });
+
+    if (authErr) {
+      if (authErr.message.includes('already registered')) {
+        return res.status(409).json({ error: 'A user with this email already exists' });
+      }
+      throw authErr;
+    }
+
+    const userId = authData.user.id;
+
+    // 3. Insert therapist profile
+    const { error: profileErr } = await supabaseAdmin.from('profiles').insert({
+      id: userId,
+      full_name: app.full_name,
+      email: app.email,
+      phone: app.phone,
+      specialization: app.specialization,
+      role: 'therapist',
+      status: 'pending', // pending until they set their password
+    });
+
+    if (profileErr) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      throw profileErr;
+    }
+
+    // 4. Generate invite link
+    const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email: app.email,
+    });
+    if (linkErr) throw linkErr;
+
+    const url = new URL(linkData.properties.action_link);
+    const token = url.searchParams.get('token') || linkData.properties.hashed_token;
+
+    // 5. Send invite email
+    const { sendTherapistInviteEmail } = require('../../services/emailService');
+    await sendTherapistInviteEmail({ to: app.email, name: app.full_name, inviteToken: token });
+
+    // 6. Mark application approved
+    const { data: updated, error: updateErr } = await supabaseAdmin
+      .from('therapist_applications')
+      .update({ status: 'approved', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('id, full_name, email, status')
+      .single();
+
+    if (updateErr) throw updateErr;
+
+    // 7. Log activity
+    await supabaseAdmin.rpc('log_activity', {
+      p_actor_id:    req.user.id,
+      p_event_type:  'application_approved',
+      p_entity_type: 'therapist_application',
+      p_entity_id:   null,
+      p_message:     `Application approved for ${app.full_name} — invite sent`,
+    });
+
+    return res.status(200).json({
+      message: `Application approved. Invite email sent to ${app.email}.`,
+      application: updated,
+      therapistId: userId,
+    });
+  } catch (err) {
+    console.error('[PATCH /admin/applications/:id/approve]', err);
+    return res.status(500).json({ error: 'Failed to approve application', detail: err.message });
+  }
+});
+
+// ─── PATCH /api/admin/applications/:id/reject ────────────────────────────────
+router.patch('/applications/:id/reject', ...guard, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('therapist_applications')
+      .update({ status: 'rejected', updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select('id, full_name, status')
+      .single();
+
+    if (error) throw error;
+
+    await supabaseAdmin.rpc('log_activity', {
+      p_actor_id:    req.user.id,
+      p_event_type:  'application_rejected',
+      p_entity_type: 'therapist_application',
+      p_entity_id:   null,
+      p_message:     `Application rejected for ${data.full_name}`,
+    });
+
+    return res.status(200).json({ message: 'Application rejected', application: data });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to reject application' });
+  }
+});
+
+// ─── DELETE /api/admin/applications/:id ──────────────────────────────────────
+router.delete('/applications/:id', ...guard, async (req, res) => {
+  try {
+    const { error } = await supabaseAdmin
+      .from('therapist_applications')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (error) throw error;
+    return res.status(200).json({ message: 'Application deleted' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to delete application' });
+  }
+});
+
+
+// ─── PATCH /api/admin/therapists/:id/status ──────────────────────────────────
+// Body: { status: 'active' | 'inactive' | 'suspended' }
+router.patch('/therapists/:id/status', ...guard, async (req, res) => {
+  const { status } = req.body;
+  const allowed = ['active', 'inactive', 'suspended'];
+  if (!allowed.includes(status)) {
+    return res.status(422).json({ error: `status must be one of: ${allowed.join(', ')}` });
+  }
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .update({ status })
+      .eq('id', req.params.id)
+      .eq('role', 'therapist')
+      .select('id, full_name, status')
+      .single();
+
+    if (error) throw error;
+
+    await supabaseAdmin.rpc('log_activity', {
+      p_actor_id:    req.user.id,
+      p_event_type:  'therapist_status_changed',
+      p_entity_type: 'therapist',
+      p_entity_id:   req.params.id,
+      p_message:     `${data.full_name} marked as ${status}`,
+    });
+
+    return res.status(200).json({ message: 'Status updated', therapist: data });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to update therapist status' });
+  }
+});
+
+// ─── DELETE /api/admin/therapists/:id ────────────────────────────────────────
+// Deletes the profile row + the Supabase auth user
+router.delete('/therapists/:id', ...guard, async (req, res) => {
+  try {
+    const { error: profileErr } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('role', 'therapist');
+
+    if (profileErr) throw profileErr;
+
+    // Also delete from Supabase auth
+    await supabaseAdmin.auth.admin.deleteUser(req.params.id);
+
+    return res.status(200).json({ message: 'Therapist deleted' });
+  } catch (err) {
+    console.error('[DELETE /admin/therapists/:id]', err);
+    return res.status(500).json({ error: 'Failed to delete therapist' });
+  }
+});

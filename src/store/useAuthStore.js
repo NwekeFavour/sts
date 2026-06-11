@@ -20,9 +20,23 @@ function authHeaders(token) {
   };
 }
 
+function getErrorMessage(res, json) {
+  if (json?.message || json?.error) return json.message || json.error;
+
+  if (res.status >= 500) return "Server error. Please try again later.";
+  if (res.status === 401) return "Please log in again.";
+  if (res.status === 403) return "You don't have permission.";
+  if (res.status === 404) return "Not found.";
+
+  return "Something went wrong. Please try again.";
+}
+
+
 async function unwrap(res) {
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+  if (!res.ok) {
+    throw new Error(getErrorMessage(res, json));
+  }
   return json;
 }
 
@@ -83,6 +97,8 @@ const useAuthStore = create(
       fetchMe: async () => {
         const { session } = get();
         const token = session?.access_token;
+
+         get()._setLoading();
 
         if (!token || isTokenExpired(token)) {
           // Try refresh before giving up

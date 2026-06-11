@@ -393,7 +393,7 @@ exports.promoteToTherapist = async (req, res) => {
     const { data: existing } = await supabaseAdmin
       .from("therapist_applications")
       .select("id")
-      .eq("email", email)
+      .eq("email", app.email)
       .eq("status", "pending")
       .maybeSingle();
 

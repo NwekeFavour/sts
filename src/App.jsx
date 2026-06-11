@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import { Routes, Route } from "react-router-dom";
 import Home from "./pages/home";
@@ -21,10 +21,28 @@ import OurProcess from "./pages/process";
 import PaymentPage from "./pages/uploadReciept";
 import ApplyTherapist from "./pages/applyTherapist";
 import { Toaster } from "react-hot-toast";
-import { AdminRoute } from "./components/ProtectedRoute";
+import { AdminRoute, GuestRoute } from "./components/ProtectedRoute";
+import LabUploadPage from "./pages/labupload";
+import useAuthStore from "./store/useAuthStore";
 
 function App() {
-  const [count, setCount] = useState(0);
+     const fetchMe = useAuthStore((state) => state.fetchMe);
+  const session = useAuthStore((state) => state.session);
+  const setLoading = useAuthStore((state) => state._setLoading);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const init = async () => {
+      if (session) {
+        setLoading(); // ← set loading BEFORE routes render
+        await fetchMe();
+      }
+      setReady(true);
+    };
+    init();
+  }, []);
+
+  if (!ready) return <div>Loading...</div>;
 
   return (
     <>
@@ -36,9 +54,17 @@ function App() {
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/apply-therapist" element={<ApplyTherapist />} />
         {/* protected routes */}
-        <Route path="/login" element={<AuthPages />} />
+        <Route 
+  path="/login" 
+  element={
+    <GuestRoute>
+      <AuthPages />
+    </GuestRoute>
+  } 
+/>
         <Route path="/invite/reset-password" element={<ResetPassword />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/lab-upload/:token" element={<LabUploadPage/>}/>
 
         <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index element={<AdminDashboard />} />

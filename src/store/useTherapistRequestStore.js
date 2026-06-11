@@ -18,50 +18,70 @@ function authHeaders() {
   }
 }
 
+function getErrorMessage(res, json) {
+  if (json?.message || json?.error) return json.message || json.error;
+
+  if (res.status >= 500) return "Server error. Please try again later.";
+  if (res.status === 401) return "Please log in again.";
+  if (res.status === 403) return "You don't have permission.";
+  if (res.status === 404) return "Not found.";
+
+  return "Something went wrong. Please try again.";
+}
+
 async function unwrap(res) {
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.message ?? json.error ?? `HTTP ${res.status}`);
+  if (!res.ok) {
+  throw new Error(getErrorMessage(res, json));
+}
   return json;
 }
 
 // ── video validation helpers ──────────────────────────────────────────────
-const MAX_DURATION_SEC = 300;               // 5 min
-const MAX_FILE_BYTES   = 200 * 1024 * 1024; // 200 MB
-const ALLOWED_TYPES    = ["video/mp4", "video/quicktime", "video/webm", "video/x-msvideo"];
+const MAX_DURATION_SEC = 300; // 5 min
+const MAX_FILE_BYTES = 200 * 1024 * 1024; // 200 MB
+const ALLOWED_TYPES = [
+  "video/mp4",
+  "video/quicktime",
+  "video/webm",
+  "video/x-msvideo",
+];
 
 function getVideoDuration(file) {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
-    const v   = document.createElement("video");
+    const v = document.createElement("video");
     v.preload = "metadata";
-    v.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(v.duration); };
-    v.onerror          = () => resolve(null);
+    v.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      resolve(v.duration);
+    };
+    v.onerror = () => resolve(null);
     v.src = url;
   });
 }
 
 // ── empty form shape ──────────────────────────────────────────────────────
 const EMPTY_FORM = {
-  parentName:  "",
+  parentName: "",
   parentEmail: "",
   parentPhone: "",
-  childName:   "",
+  childName: "",
   childGender: "",
-  childAge:    "",
-  location:    "",
-  behaviours:  "",
-  duration:    "",
-  history:     "",
-  extra:       "",
-  videoFile:   null,
+  childAge: "",
+  location: "",
+  behaviours: "",
+  duration: "",
+  history: "",
+  extra: "",
+  videoFile: null,
 };
 
 // ─────────────────────────────────────────────────────────────────────────
 const useTherapistRequestStore = create((set, get) => ({
-
   // ── ui ────────────────────────────────────────────────────────────────
-  isOpen:      false,
-  step:        1,          // 1 | 2 | 3
+  isOpen: false,
+  step: 1, // 1 | 2 | 3
   requestSent: false,
   submittedId: null,
 
@@ -69,10 +89,10 @@ const useTherapistRequestStore = create((set, get) => ({
   form: { ...EMPTY_FORM },
 
   // ── async ─────────────────────────────────────────────────────────────
-  uploading:      false,
+  uploading: false,
   uploadProgress: 0,
-  videoError:     null,
-  submitError:    null,
+  videoError: null,
+  submitError: null,
 
   // ── modal lifecycle ───────────────────────────────────────────────────
   openModal: () => set({ isOpen: true, step: 1, requestSent: false }),
@@ -84,21 +104,21 @@ const useTherapistRequestStore = create((set, get) => ({
   },
 
   // ── form helpers ──────────────────────────────────────────────────────
-  setField: (key, value) =>
-    set((s) => ({ form: { ...s.form, [key]: value } })),
+  setField: (key, value) => set((s) => ({ form: { ...s.form, [key]: value } })),
 
   setStep: (n) => set({ step: n }),
 
-  reset: () => set({
-    step: 1,
-    form: { ...EMPTY_FORM },
-    requestSent:    false,
-    submittedId:    null,
-    uploading:      false,
-    uploadProgress: 0,
-    videoError:     null,
-    submitError:    null,
-  }),
+  reset: () =>
+    set({
+      step: 1,
+      form: { ...EMPTY_FORM },
+      requestSent: false,
+      submittedId: null,
+      uploading: false,
+      uploadProgress: 0,
+      videoError: null,
+      submitError: null,
+    }),
 
   // ── video validation ──────────────────────────────────────────────────
   setVideoFile: async (file) => {
@@ -118,7 +138,8 @@ const useTherapistRequestStore = create((set, get) => ({
     }
     const dur = await getVideoDuration(file);
     if (dur && dur > MAX_DURATION_SEC) {
-      const m = Math.floor(dur / 60), s = Math.round(dur % 60);
+      const m = Math.floor(dur / 60),
+        s = Math.round(dur % 60);
       set({ videoError: `Video is ${m}m ${s}s — must be under 5 minutes.` });
       return;
     }
@@ -142,55 +163,68 @@ const useTherapistRequestStore = create((set, get) => ({
     // Fake incremental ticks — XHR FormData upload doesn't give progress
     // through the fetch API. Replace with XMLHttpRequest if you want real %.
     const ticker = setInterval(
-      () => set((s) => ({ uploadProgress: Math.min(s.uploadProgress + 6, 85) })),
-      400
+      () =>
+        set((s) => ({ uploadProgress: Math.min(s.uploadProgress + 6, 85) })),
+      400,
     );
 
     try {
       // Combine behavioural fields into the single `notes` column
       const notes = [
         form.behaviours && `Behaviours/challenges:\n${form.behaviours}`,
-        form.duration   && `Duration: ${form.duration}`,
-        form.history    && `Previous therapy/diagnosis:\n${form.history}`,
-        form.extra      && `Additional notes:\n${form.extra}`,
-      ].filter(Boolean).join("\n\n");
+        form.duration && `Duration: ${form.duration}`,
+        form.history && `Previous therapy/diagnosis:\n${form.history}`,
+        form.extra && `Additional notes:\n${form.extra}`,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
 
       const body = new FormData();
-      body.append("parentName",  form.parentName);
+      body.append("parentName", form.parentName);
       body.append("parentEmail", form.parentEmail);
       body.append("parentPhone", form.parentPhone);
       body.append("childGender", form.childGender);
-      body.append("childName",   form.childName);
-      body.append("childAge",    form.childAge);
-      body.append("location",     form.location);
-      body.append("video",        form.videoFile, form.videoFile.name);
+      body.append("childName", form.childName);
+      body.append("childAge", form.childAge);
+      body.append("location", form.location);
+      body.append("video", form.videoFile, form.videoFile.name);
 
-      body.append("primaryConcerns",         form.behaviours   || "");
-body.append("behaviouralChallenges",   form.behaviours   || "");
-body.append("previousTherapyDetails",  form.history      || "");
-body.append("additionalNotes",         form.extra        || "");
- 
-if (form.duration) {
-  body.append("additionalNotes", [form.extra, `Duration of concern: ${form.duration}`].filter(Boolean).join("\n\n"));
-}
+      body.append("primaryConcerns", form.behaviours || "");
+      body.append("behaviouralChallenges", form.behaviours || "");
+      body.append("previousTherapyDetails", form.history || "");
+      body.append("additionalNotes", form.extra || "");
+
+      if (form.duration) {
+        body.append(
+          "additionalNotes",
+          [form.extra, `Duration of concern: ${form.duration}`]
+            .filter(Boolean)
+            .join("\n\n"),
+        );
+      }
 
       // authHeaders() intentionally omits Content-Type so fetch sets
       // the correct multipart boundary automatically for FormData.
       const data = await unwrap(
         await fetch(`${API}/api/requests/submit`, {
-          method:  "POST",
-          headers: authHeaders(),   // Authorization only, no Content-Type
+          method: "POST",
+          headers: authHeaders(), // Authorization only, no Content-Type
           body,
-        })
+        }),
       );
 
       clearInterval(ticker);
-      set({ uploadProgress: 100, requestSent: true, submittedId: data.id ?? data.request?.id });
-
+      set({
+        uploadProgress: 100,
+        requestSent: true,
+        submittedId: data.id ?? data.request?.id,
+      });
     } catch (err) {
       clearInterval(ticker);
       console.error("[therapist-request] submit error:", err);
-      set({ submitError: err.message || "Something went wrong. Please try again." });
+      set({
+        submitError: err.message || "Something went wrong. Please try again.",
+      });
     } finally {
       set({ uploading: false });
     }

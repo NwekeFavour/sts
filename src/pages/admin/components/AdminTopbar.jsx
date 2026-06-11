@@ -47,29 +47,13 @@ export default function AdminTopbar({ title, subtitle, onMenuClick }) {
 
       {/* Right */}
       <div className="flex items-center gap-2 sm:gap-3">
-
-        {/* Search */}
-        <div className="relative hidden md:block">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-4 py-2 text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-[#E8890C]/30 focus:border-[#E8890C] w-52 transition-all"
-          />
-        </div>
+       
 
         {/* Help */}
         <button className="hidden sm:flex w-8 h-8 rounded-xl bg-gray-50 border border-gray-200 items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all">
           <HelpCircle size={15} />
         </button>
 
-        {/* Notifications */}
-        <button className="relative w-8 h-8 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all">
-          <Bell size={15} />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#E8890C] rounded-full text-[9px] text-white font-bold flex items-center justify-center">
-            3
-          </span>
-        </button>
 
         {/* User pill — shows real data from fetchMe, skeleton while loading */}
         <button className="flex items-center gap-2 pl-1 pr-2 sm:pr-3 py-1 rounded-xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200">

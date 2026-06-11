@@ -415,28 +415,62 @@ function ApplicationsSection() {
                     <Detail label="Qualifications" value={app.qualifications} />
                     <Detail label="License" value={app.license_number} />
                     <Detail label="Resume" value={app.resume_link} isLink />
-                    {app.cover_letter && (
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2">Application answers</p>
-                        <div className="space-y-2">
-                          {app.cover_letter.split("\n\n").map((section, i) => {
-                            const m = section.match(/^\[(.+?)\]\n([\s\S]+)$/);
-                            if (m) return (
-                              <div key={i} className="bg-gray-50 rounded-lg p-3">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">{m[1]}</p>
-                                <p className="text-xs text-gray-700 leading-relaxed">{m[2]}</p>
-                              </div>
-                            );
-                            return (
-                              <div key={i} className="bg-gray-50 rounded-lg p-3">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Cover letter</p>
-                                <p className="text-xs text-gray-700 leading-relaxed">{section}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+{app.cover_letter &&
+  (() => {
+    const firstQuestionIndex = app.cover_letter.search(/\n\s*\[/);
+
+    const coverLetter =
+      firstQuestionIndex > -1
+        ? app.cover_letter.slice(0, firstQuestionIndex).trim()
+        : app.cover_letter.trim();
+
+    const answers =
+      firstQuestionIndex > -1
+        ? app.cover_letter.slice(firstQuestionIndex)
+        : "";
+
+    const questionBlocks = [
+      ...answers.matchAll(/\[(.+?)\]\n([\s\S]*?)(?=\n\s*\[|$)/g),
+    ];
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2">
+            Cover Letter
+          </p>
+
+          <div className="bg-white border border-gray-100 rounded-xl p-4">
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-6">
+              {coverLetter}
+            </p>
+          </div>
+        </div>
+
+        {questionBlocks.length > 0 && (
+          <div>
+            <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-2">
+              Application Questions
+            </p>
+
+            <div className="bg-white border border-gray-100 rounded-xl p-4">
+              {questionBlocks.map((match, i) => (
+                <div key={i} className="mb-4 last:mb-0">
+                  <p className="text-xs font-semibold text-gray-900 mb-2">
+                    {match[1]}
+                  </p>
+
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-6">
+                    {match[2].trim() || "No answer"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  })()}
                   </div>
                 )}
 
@@ -577,6 +611,24 @@ export default function AdminDashboard() {
     },
   ], [stats]);
 
+ const [currentPage, setCurrentPage] = useState(1);
+const ITEMS_PER_PAGE = 5;
+const ACTIVITY_PER_PAGE = 5
+
+const paginatedRequests = recentRequests.slice(
+  (currentPage - 1) * ITEMS_PER_PAGE,
+  currentPage * ITEMS_PER_PAGE
+);
+
+const totalPages = Math.ceil(recentRequests.length / ITEMS_PER_PAGE);
+
+//activity feed pagination
+const paginatedActivies = activityFeed.slice(
+  (currentPage - 1) * ACTIVITY_PER_PAGE,
+  currentPage * ACTIVITY_PER_PAGE
+);
+
+const totalActivies = Math.ceil(activityFeed.length / ACTIVITY_PER_PAGE);
   if (dashboardLoading) {
     return (
       <div className="space-y-7 animate-pulse">
@@ -686,9 +738,9 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {recentRequests.length === 0 ? (
+                {paginatedRequests.length === 0 ? (
                   <tr><td colSpan={5} className="text-center text-xs text-gray-400 py-10">No requests yet</td></tr>
-                ) : recentRequests.map((req) => (
+                ) : paginatedRequests.map((req) => (
                   <tr key={req.id} className="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
                     <td className="px-4 lg:px-6 py-3.5">
                       <p className="text-sm font-semibold text-gray-800">{req.parent}</p>
@@ -710,13 +762,38 @@ export default function AdminDashboard() {
                 ))}
               </tbody>
             </table>
+            {totalPages > 1 && (
+  <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-100">
+    <button
+      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+      disabled={currentPage === 1}
+      className="px-3 py-1 text-xs font-medium border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Previous
+    </button>
+
+    <span className="text-xs text-gray-500">
+      Page {currentPage} of {totalPages}
+    </span>
+
+    <button
+      onClick={() =>
+        setCurrentPage((p) => Math.min(p + 1, totalPages))
+      }
+      disabled={currentPage === totalPages}
+      className="px-3 py-1 text-xs font-medium border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Next
+    </button>
+  </div>
+)}
           </div>
 
           {/* Mobile cards */}
           <div className="md:hidden divide-y divide-gray-100">
-            {recentRequests.length === 0 ? (
+            {paginatedRequests.length === 0 ? (
               <p className="text-xs text-gray-400 text-center py-6">No activity yet</p>
-            ) :recentRequests.map((req) => (
+            ) :paginatedRequests.map((req) => (
               <div key={req.id} className="p-4 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -743,6 +820,31 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
+                      {totalPages > 1 && (
+  <div className="md:hidden flex items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-100">
+    <button
+      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+      disabled={currentPage === 1}
+      className="px-3 py-1 text-xs font-medium border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Previous
+    </button>
+
+    <span className="text-xs text-gray-500">
+      Page {currentPage} of {totalPages}
+    </span>
+
+    <button
+      onClick={() =>
+        setCurrentPage((p) => Math.min(p + 1, totalPages))
+      }
+      disabled={currentPage === totalPages}
+      className="px-3 py-1 text-xs font-medium border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Next
+    </button>
+  </div>
+)}
         </div>
 
         {/* Activity feed */}
@@ -752,9 +854,9 @@ export default function AdminDashboard() {
             <p className="text-xs text-gray-400 mt-0.5">Latest system events</p>
           </div>
           <div className="p-5 space-y-4">
-            {activityFeed.length === 0 ? (
+            {paginatedActivies.length === 0 ? (
               <p className="text-xs text-gray-400 text-center py-6">No activity yet</p>
-            ) : activityFeed.map((a) => {
+            ) : paginatedActivies.map((a) => {
               const { icon: Icon, color } = EVENT_ICON[a.eventType] ?? DEFAULT_EVENT;
               return (
                 <div key={a.id} className="flex items-start gap-3">
@@ -765,11 +867,38 @@ export default function AdminDashboard() {
                       <Clock size={9} /> {a.time}
                     </p>
                   </div>
+
                 </div>
               );
             })}
           </div>
+                                        {totalActivies > 1 && (
+  <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-100">
+    <button
+      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+      disabled={currentPage === 1}
+      className="px-3 py-1 text-xs font-medium border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Previous
+    </button>
+
+    <span className="text-xs text-gray-500">
+      Page {currentPage} of {totalActivies}
+    </span>
+
+    <button
+      onClick={() =>
+        setCurrentPage((p) => Math.min(p + 1, totalActivies))
+      }
+      disabled={currentPage === totalActivies}
+      className="px-3 py-1 text-xs font-medium border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Next
+    </button>
+  </div>
+)}
         </div>
+        
       </div>
 
       {/* ── Applications section ── */}

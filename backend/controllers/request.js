@@ -4,6 +4,7 @@
 const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { supabaseAdmin } = require("../config/db");
+const { sendPatientAssignedToTherapistEmail, sendTherapistAssignedToParentEmail } = require("../utils/mail");
 
 // ─── R2 client ────────────────────────────────────────────────────────────────
 const r2 = new S3Client({
@@ -155,10 +156,10 @@ exports.assignTherapist = async (req, res) => {
       return res.status(422).json({ success: false, message: "therapist_id is required" });
     }
 
-    // Verify therapist exists and is active
+    // ── 1. Verify therapist ───────────────────────────────────────────────────
     const { data: therapist, error: tErr } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, status")
+      .select("id, full_name, email, phone, specialization, status")
       .eq("id", therapist_id)
       .eq("role", "therapist")
       .single();
@@ -166,7 +167,6 @@ exports.assignTherapist = async (req, res) => {
     if (tErr || !therapist) {
       return res.status(404).json({ success: false, message: "Therapist not found" });
     }
-
     if (therapist.status !== "active") {
       return res.status(400).json({
         success: false,
@@ -174,42 +174,104 @@ exports.assignTherapist = async (req, res) => {
       });
     }
 
-    const { data, error } = await supabaseAdmin
-      .from("requests")
-      .update({
-        therapist_id,
-        status:      "assigned",
-        assigned_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .select("id, child_name, parent_name, status, therapist_id")
-      .single();
+    // ── 2. Fetch request + parent email in parallel ───────────────────────────
+    const [
+      { data: request, error: rErr },
+      { data: formRow },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("requests")
+        .select("id, child_name, parent_name, child_age, location, notes")
+        .eq("id", id)
+        .maybeSingle(),
+
+      supabaseAdmin
+        .from("forms")
+        .select("data")
+        .eq("request_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    if (rErr || !request) {
+      return res.status(404).json({ success: false, message: "Request not found" });
+    }
+
+    const parentEmail = formRow?.data?.parent_email ?? null;
+
+    // ── 3. Update request + log activity in parallel ──────────────────────────
+    const [{ data, error }] = await Promise.all([
+      supabaseAdmin
+        .from("requests")
+        .update({
+          therapist_id,
+          status:      "assigned",
+          assigned_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .select("id, child_name, parent_name, status, therapist_id")
+        .single(),
+
+      supabaseAdmin.rpc("log_activity", {
+        p_actor_id:    req.user.id,
+        p_event_type:  "therapist_assigned",
+        p_entity_type: "help_request",
+        p_entity_id:   id,
+        p_message:     `${therapist.full_name} assigned to ${request.child_name}'s request`,
+      }).catch(console.warn),
+    ]);
 
     if (error) {
-      if (error.code === "PGRST116") return res.status(404).json({ success: false, message: "Request not found" });
+      if (error.code === "PGRST116") {
+        return res.status(404).json({ success: false, message: "Request not found" });
+      }
       throw error;
     }
 
-    // Log activity
-    await supabaseAdmin.rpc("log_activity", {
-      p_actor_id:    req.user.id,
-      p_event_type:  "therapist_assigned",
-      p_entity_type: "help_request",
-      p_entity_id:   id,
-      p_message:     `${therapist.full_name} assigned to ${data.child_name}'s request`,
-    });
-
-    return res.status(200).json({
-      success:  true,
-      message:  `${therapist.full_name} assigned successfully`,
+    // ── 4. Respond immediately — emails fire after response is sent ───────────
+    res.status(200).json({
+      success: true,
+      message: `${therapist.full_name} assigned successfully`,
       data,
     });
+
+    // setImmediate pushes email work to the next event loop tick,
+    // completely outside the request/response cycle.
+    setImmediate(() => {
+      if (parentEmail) {
+        sendTherapistAssignedToParentEmail({
+          to:                 parentEmail,
+          parentName:         request.parent_name,
+          childName:          request.child_name,
+          therapistName:      therapist.full_name,
+          therapistEmail:     therapist.email,
+          therapistPhone:     therapist.phone          ?? null,
+          therapistSpecialty: therapist.specialization ?? "Therapist",
+        }).catch((e) => console.warn("[assignTherapist] parent email:", e.message));
+      } else {
+        console.warn("[assignTherapist] No parent email for request", id);
+      }
+
+      if (therapist.email) {
+        sendPatientAssignedToTherapistEmail({
+          to:            therapist.email,
+          therapistName: therapist.full_name,
+          parentName:    request.parent_name,
+          childName:     request.child_name,
+          childAge:      request.child_age  ?? null,
+          location:      request.location   ?? null,
+          notes:         request.notes      ?? null,
+          parentEmail:   parentEmail        ?? null,
+        }).catch((e) => console.warn("[assignTherapist] therapist email:", e.message));
+      }
+    });
+
   } catch (err) {
     console.error("[assignTherapist]", err);
     return res.status(500).json({ success: false, message: err.message });
   }
 };
-
 // ─── PATCH /api/requests/:id/status ──────────────────────────────────────────
 // Admin or therapist: update request status
 exports.updateStatus = async (req, res) => {
