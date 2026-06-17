@@ -751,7 +751,7 @@ const totalActivies = Math.ceil(activityFeed.length / ACTIVITY_PER_PAGE);
                     <td className="px-3 py-3.5 text-xs text-gray-500">{req.date}</td>
                     <td className="px-3 py-3.5">
                       <span className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${STATUS_BADGE[req.status] ?? "bg-gray-100 text-gray-500"}`}>
-                        {req.status.replace("-", " ")}
+                        {req.status.replace("/_/g,", " ")}
                       </span>
                     </td>
                     <td className="px-4 py-3.5">
@@ -802,7 +802,7 @@ const totalActivies = Math.ceil(activityFeed.length / ACTIVITY_PER_PAGE);
                     <p className="text-xs text-gray-400 mt-1">{req.child}</p>
                   </div>
                   <span className={`inline-flex items-center text-[10px] font-bold px-2.5 py-1 rounded-full capitalize ${STATUS_BADGE[req.status]}`}>
-                    {req.status.replace("-", " ")}
+                    {req.status.replace("/_/g,", " ")}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

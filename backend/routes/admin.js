@@ -55,7 +55,7 @@ router.get('/dashboard', ...guard, async (req, res) => {
     const stats = {
       pendingRequests:  requests.filter(r => r.status === 'pending').length,
       totalRequests:    requests.length,
-      totalCases:       requests.filter(r => ['assigned','in_progress'].includes(r.status)).length,
+      totalCases:       requests.filter(r => ['in_progress'].includes(r.status)).length,
       activeTherapists: therapists.filter(t => t.status === 'active').length,
       pendingReports:   reports.filter(r => r.status === 'pending').length,
       pendingForms:     forms.filter(f => f.status === 'pending').length,
@@ -79,6 +79,7 @@ router.get('/dashboard', ...guard, async (req, res) => {
         name:         t.full_name,
         role:         t.specialization ?? 'Therapist',
         cases:        t.active_cases,
+        status: t.status,
         avatar:       t.full_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
         avatarUrl:    t.avatar_url ?? null,
       }));
