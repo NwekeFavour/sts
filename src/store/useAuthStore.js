@@ -276,24 +276,6 @@ const useAuthStore = create(
         }
       },
 
-      // ── inviteTherapist (admin only) ───────────────────────────────────────
-      inviteTherapist: async ({ email, full_name, phone, specialization }) => {
-        get()._setLoading();
-        try {
-          const data = await unwrap(
-            await fetch(`${API}/api/auth/invite-therapist`, {
-              method: "POST",
-              headers: authHeaders(get().accessToken()),
-              body: JSON.stringify({ email, full_name, phone, specialization }),
-            }),
-          );
-          set({ status: "idle" });
-          return data;
-        } catch (err) {
-          get()._setError(err.message);
-          throw err;
-        }
-      },
 
       // ── resendInvite (admin only) ──────────────────────────────────────────
       resendInvite: async (therapistId) => {

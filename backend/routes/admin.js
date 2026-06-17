@@ -5,10 +5,142 @@
 const express = require('express');
 const { supabaseAdmin } = require('../config/db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { sendReportFlaggedEmail } = require('../utils/mail');
+const { sendReportFlaggedEmail, sendApplicationApprovedEmail } = require('../utils/mail');
 
 const router = express.Router();
 const guard = [authenticate, requireRole('admin')];
+
+
+
+// ─── POST /api/admin/therapists/invite ──────────────────────────────────────
+router.post('/therapists/invite', ...guard, async (req, res) => {
+  const { full_name, email, specialization } = req.body;
+
+  if (!full_name || !email || !specialization) {
+    return res.status(422).json({ error: 'full_name, email and specialization are required' });
+  }
+
+  try {
+    // 1. Check profiles table by email
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existingProfile) {
+      return res.status(409).json({ error: 'A therapist with this email already exists' });
+    }
+
+    // 2. Scan auth users for orphaned entry with this email
+    let orphanedId = null;
+    let page = 1;
+    outer: while (true) {
+      const { data: { users }, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
+        page,
+        perPage: 1000,
+      });
+      if (listErr) throw listErr;
+      if (!users?.length) break;
+      for (const u of users) {
+        if (u.email?.toLowerCase() === email.toLowerCase()) {
+          orphanedId = u.id;
+          break outer;
+        }
+      }
+      if (users.length < 1000) break;
+      page++;
+    }
+
+    console.log('[invite] orphanedId found:', orphanedId);
+
+    if (orphanedId) {
+      console.log('[invite] deleting orphaned auth user:', orphanedId);
+      const { error: delErr } = await supabaseAdmin.auth.admin.deleteUser(orphanedId);
+      if (delErr) throw delErr;
+      console.log('[invite] orphan deleted');
+    } else {
+      console.log('[invite] no orphaned auth user found for:', email);
+    }
+
+    console.log('[invite] proceeding to createUser for:', email);
+
+    // 3. Create fresh auth user
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: require('crypto').randomUUID(),
+      email_confirm: true,
+      user_metadata: { full_name },
+    });
+
+    console.log('[invite] createUser result — id:', authData?.user?.id, 'err:', authErr?.message);
+
+    if (authErr) throw authErr;
+
+    const userId = authData.user.id;
+
+    // 4. Insert profile — rollback auth user if this fails
+    console.log('[invite] inserting profile for userId:', userId);
+
+// 4. Insert profile — use upsert in case the trigger already created the row
+const { error: profileErr } = await supabaseAdmin
+  .from('profiles')
+  .upsert({
+    id: userId,
+    full_name,
+    email,
+    specialization,
+    role: 'therapist',
+    status: 'active',
+    active_cases: 0,
+  }, { onConflict: 'id' });  // ← if trigger already inserted, just update it
+
+if (profileErr) {
+  await supabaseAdmin.auth.admin.deleteUser(userId);
+  throw profileErr;
+}
+
+    // 5. Generate invite link
+    const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+    });
+    if (linkErr) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      throw linkErr;
+    }
+
+    const url = new URL(linkData.properties.action_link);
+    const token = url.searchParams.get('token') || linkData.properties.hashed_token;
+
+    // 6. Send invite email
+    await sendApplicationApprovedEmail({ to: email, name: full_name, inviteToken: token });
+
+    // 7. Log activity (fire and forget)
+    Promise.resolve(supabaseAdmin.rpc('log_activity', {
+      p_actor_id: req.user.id,
+      p_event_type: 'therapist_invited',
+      p_entity_type: 'therapist',
+      p_entity_id: userId,
+      p_message: `Therapist invite sent to ${full_name}`,
+    })).catch(console.warn);
+
+    return res.status(201).json({
+      success: true,
+      message: `Invite sent to ${email}`,
+      therapist: {
+        id: userId,
+        full_name,
+        email,
+        specialization,
+        status: 'pending',
+      },
+    });
+  } catch (err) {
+    console.error('[POST /admin/therapists/invite]', err);
+    return res.status(500).json({ error: 'Failed to invite therapist', detail: err.message });
+  }
+});
 
 // ─── GET /api/admin/dashboard ─────────────────────────────────────────────────
 // Returns all stat counts + recent requests + therapist snapshot + activity feed
@@ -424,8 +556,7 @@ router.patch('/applications/:id/approve', ...guard, async (req, res) => {
     const token = url.searchParams.get('token') || linkData.properties.hashed_token;
 
     // 5. Send invite email
-    const { sendTherapistInviteEmail } = require('../../services/emailService');
-    await sendTherapistInviteEmail({ to: app.email, name: app.full_name, inviteToken: token });
+    await sendApplicationApprovedEmail({ to: app.email, name: app.full_name, inviteToken: token });
 
     // 6. Mark application approved
     const { data: updated, error: updateErr } = await supabaseAdmin

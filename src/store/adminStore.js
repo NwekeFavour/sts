@@ -52,6 +52,12 @@ async function patchStatus(id, status, reason = null) {
   );
 }
 
+const initialForm = {
+  full_name: "",
+  email: "",
+  specialization: "",
+};
+
 export const useAdminStore = create((set, get) => {
   return {
     // ── Raw lists (used by sidebar counts) ──────────────────────────────────────
@@ -87,6 +93,39 @@ export const useAdminStore = create((set, get) => {
     activityFeed: [],
     dashboardLoading: false,
     dashboardError: null,
+
+      isOpen: false,
+
+  // Form State
+  form: initialForm,
+
+  // Loading/Error
+  isSubmitting: false,
+  error: null,
+
+  // Actions
+  openModal: () => set({ isOpen: true }),
+
+  closeModal: () =>
+    set({
+      isOpen: false,
+      form: initialForm,
+      error: null,
+    }),
+
+  setField: (field, value) =>
+    set((state) => ({
+      form: {
+        ...state.form,
+        [field]: value,
+      },
+    })),
+
+  resetForm: () =>
+    set({
+      form: initialForm,
+      error: null,
+    }),
 
     // ── fetchDashboard ───────────────────────────────────────────────────────────
     // Calls GET /api/admin/dashboard — single request for everything the dashboard needs.
@@ -454,6 +493,44 @@ export const useAdminStore = create((set, get) => {
     return { url: data.url };
   } catch (err) {
     console.error("[getFormDownloadUrl]", err);
+    throw err;
+  }
+},
+submitTherapist: async () => {
+  const { form } = get();
+
+  if (!form.full_name?.trim() || !form.email?.trim() || !form.specialization?.trim()) {
+    set({ error: 'All fields are required', isSubmitting: false });
+    return;
+  }
+
+  set({ isSubmitting: true, error: null });
+
+  try {
+    const data = await unwrap(
+      await fetch(`${API}/api/admin/therapists/invite`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          full_name: form.full_name.trim(),
+          email: form.email.trim(),
+          specialization: form.specialization.trim(),
+        }),
+      })
+    );
+
+    // Optimistically add to therapistList
+    set((s) => ({
+      therapistList: [data.therapist, ...(s.therapistList ?? [])],
+      isOpen: false,
+      form: initialForm,
+      isSubmitting: false,
+      error: null,
+    }));
+
+    return data;
+  } catch (err) {
+    set({ error: err.message, isSubmitting: false });
     throw err;
   }
 },

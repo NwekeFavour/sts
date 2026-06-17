@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useAdminStore } from "../../../store/adminStore";
 import toast from "react-hot-toast";
+import useAuthStore from "../../../store/useAuthStore";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -284,6 +285,103 @@ function DetailModal({ t, onClose, onAction, actionLoading }) {
   );
 }
 
+function AddTherapistModal() {
+  const {
+    isOpen,
+    closeModal,
+    form,
+    setField,
+    submitTherapist,
+    isSubmitting,
+    error,
+  } = useAdminStore();
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await submitTherapist();
+      toast.success('Invite email sent successfully');
+    } catch (err) {
+      toast.error(err.message || 'Failed to send invite');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h3 className="font-bold text-gray-900">Add Therapist</h3>
+          <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg">
+            <X size={16} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-2">Full Name</label>
+            <input
+              value={form.full_name ?? ''}
+              onChange={(e) => setField('full_name', e.target.value)}
+              required
+              disabled={isSubmitting}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8890C] disabled:opacity-50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-2">Email</label>
+            <input
+              type="email"
+              value={form.email ?? ''}
+              onChange={(e) => setField('email', e.target.value)}
+              required
+              disabled={isSubmitting}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8890C] disabled:opacity-50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-2">Specialization</label>
+            <input
+              value={form.specialization ?? ''}
+              onChange={(e) => setField('specialization', e.target.value)}
+              required
+              disabled={isSubmitting}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#E8890C] disabled:opacity-50"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={closeModal}
+              disabled={isSubmitting}
+              className="px-4 py-2 border border-gray-200 rounded-xl text-sm disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-[#E8890C] text-white rounded-xl text-sm font-semibold flex items-center gap-2 disabled:opacity-60"
+            >
+              {isSubmitting && <Loader2 size={14} className="animate-spin" />}
+              {isSubmitting ? 'Sending…' : 'Send Invite'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function AdminTherapists() {
   const {
@@ -293,6 +391,13 @@ export default function AdminTherapists() {
     fetchTherapistList,
     promoteToTherapist,
     updateTherapistStatus,
+    isOpen,
+    openModal,
+    closeModal,
+    form,
+    setField,
+    resetForm,
+    submitTherapist
   } = useAdminStore();
 
   const [search,        setSearch]        = useState("");
@@ -410,8 +515,12 @@ async function runAction() {
             className="bg-white border border-gray-200 rounded-xl pl-8 pr-4 py-2.5 text-sm w-72 outline-none shadow-sm focus:ring-2 focus:ring-[#E8890C]/20 focus:border-[#E8890C]"
           />
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-[#E8890C] text-white text-sm font-semibold rounded-xl hover:bg-[#F4A832] transition shadow-sm">
-          <UserPlus size={15} /> Add Therapist
+        <button
+          onClick={openModal}
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#E8890C] text-white text-sm font-semibold rounded-xl hover:bg-[#F4A832] transition shadow-sm"
+        >
+          <UserPlus size={15} />
+          Add Therapist
         </button>
       </div>
 
@@ -470,6 +579,8 @@ async function runAction() {
           ))}
         </div>
       )}
+
+      <AddTherapistModal />
 
       {/* ── Detail modal ── */}
       <DetailModal

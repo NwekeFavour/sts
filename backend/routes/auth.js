@@ -3,7 +3,6 @@ const { body } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const { authenticate, requireRole } = require('../middleware/auth');
 const {
-  inviteTherapist,
   resetPassword,
   login,
   requestPasswordReset,
@@ -11,6 +10,7 @@ const {
   refreshToken,
   getMe,
 } = require('../controllers/auth');
+const { supabaseAdmin } = require('../config/db');
 
 const router = express.Router();
 
@@ -72,15 +72,6 @@ router.post('/forgot-password', resetLimiter, requestPasswordReset);
 router.post('/refresh', refreshToken);
 
 // ─── Admin-only routes 
-
-// POST /api/auth/invite-therapist
-router.post(
-  '/invite-therapist',
-  authenticate,
-  requireRole('admin'),
-  inviteValidation,
-  inviteTherapist
-);
 
 // POST /api/auth/resend-invite/:therapistId
 router.post(

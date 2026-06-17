@@ -1,77 +1,8 @@
 const { supabaseAdmin, supabase, authClient } = require('../config/db');
 const { validationResult } = require('express-validator');
 const crypto = require("crypto");
-const { sendTherapistInviteEmail, sendPasswordResetEmail } = require('../utils/mail');
+const { sendPasswordResetEmail } = require('../utils/mail');
 
-// ─── Admin: create therapist & send invite 
-
-async function inviteTherapist(req, res) {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(422).json({ errors: errors.array() });
-  }
-
-  const { email, full_name, phone, specialization } = req.body;
-    const normalizedEmail = email.trim().toLowerCase();
-
-  try {
-    // 1. Create the auth user in Supabase with a random temp password
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: normalizedEmail,
-      password: crypto.randomUUID(), // random temp password — they'll set their own via the invite link
-      email_confirm: true, // mark email as confirmed — they'll set password via link
-      user_metadata: { full_name },
-    });
-
-    if (authError) {
-      if (authError.message.includes('already registered')) {
-        return res.status(409).json({ error: 'A user with this email already exists' });
-      }
-      throw authError;
-    }
-
-    const userId = authData.user.id;
-    // 2. Insert profile row with role = therapist
-    const { error: profileError } = await supabaseAdmin.from('profiles').insert({
-      id: userId,
-      full_name,
-      email: normalizedEmail,
-      phone: phone || null,
-      specialization: specialization || null,
-      role: 'therapist',
-      status: 'pending', // pending until they set their password
-    });
-
-    if (profileError) {
-      // Roll back auth user if profile insert fails
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      throw profileError;
-    }
-
-    // 3. Generate a Supabase password-reset link (acts as the invite link)
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'recovery',
-      email: normalizedEmail,
-    });
-
-    if (linkError) throw linkError;
-
-    // Extract the token from the generated link so we can build our own frontend URL
-    const url = new URL(linkData.properties.action_link);
-    const token = url.searchParams.get('token_hash') || linkData.properties.hashed_token;
-
-    // 4. Send invite email
-    await sendTherapistInviteEmail({ to: normalizedEmail, name: full_name, inviteToken: token });
-
-    return res.status(201).json({
-      message: `Therapist account created. Invite email sent to ${normalizedEmail}.`,
-      therapist: { id: userId, email: normalizedEmail, full_name, status: 'pending' },
-    });
-  } catch (err) {
-    console.error('[inviteTherapist]', err);
-    return res.status(500).json({ error: 'Failed to create therapist account', detail: err.message });
-  }
-}
 
 // ─── Therapist: set password from invite link ─────────────────────────────────
 
@@ -394,7 +325,6 @@ async function refreshToken(req, res) {
 }
 
 module.exports = {
-  inviteTherapist,
   resetPassword,
   login,
   requestPasswordReset,
