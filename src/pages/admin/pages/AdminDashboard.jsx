@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 const STATUS_BADGE = {
   pending:       "bg-amber-100 text-amber-700",
   assigned:      "bg-blue-100 text-blue-700",
-  "in-progress": "bg-purple-100 text-purple-700",
+  "in_progress": "bg-purple-100 text-purple-700",
   completed:     "bg-green-100 text-green-700",
   cancelled:     "bg-gray-100 text-gray-500",
 };
@@ -612,7 +612,8 @@ export default function AdminDashboard() {
   ], [stats]);
 
  const [currentPage, setCurrentPage] = useState(1);
-const ITEMS_PER_PAGE = 5;
+ const [currentActivity, setCurrentActivities] = useState(1);
+const ITEMS_PER_PAGE = 4;
 const ACTIVITY_PER_PAGE = 5
 
 const paginatedRequests = recentRequests.slice(
@@ -624,8 +625,8 @@ const totalPages = Math.ceil(recentRequests.length / ITEMS_PER_PAGE);
 
 //activity feed pagination
 const paginatedActivies = activityFeed.slice(
-  (currentPage - 1) * ACTIVITY_PER_PAGE,
-  currentPage * ACTIVITY_PER_PAGE
+  (currentActivity - 1) * ACTIVITY_PER_PAGE,
+  currentActivity * ACTIVITY_PER_PAGE
 );
 
 const totalActivies = Math.ceil(activityFeed.length / ACTIVITY_PER_PAGE);
@@ -875,22 +876,22 @@ const totalActivies = Math.ceil(activityFeed.length / ACTIVITY_PER_PAGE);
                                         {totalActivies > 1 && (
   <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-gray-100">
     <button
-      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-      disabled={currentPage === 1}
+      onClick={() => setCurrentActivities((p) => Math.max(p - 1, 1))}
+      disabled={currentActivity === 1}
       className="px-3 py-1 text-xs font-medium border rounded disabled:opacity-50 disabled:cursor-not-allowed"
     >
       Previous
     </button>
 
     <span className="text-xs text-gray-500">
-      Page {currentPage} of {totalActivies}
+      Page {currentActivity} of {totalActivies}
     </span>
 
     <button
       onClick={() =>
-        setCurrentPage((p) => Math.min(p + 1, totalActivies))
+        setCurrentActivities((p) => Math.min(p + 1, totalActivies))
       }
-      disabled={currentPage === totalActivies}
+      disabled={currentActivity === totalActivies}
       className="px-3 py-1 text-xs font-medium border rounded disabled:opacity-50 disabled:cursor-not-allowed"
     >
       Next

@@ -63,6 +63,9 @@ export const useAdminStore = create((set, get) => {
     requestsError: null,
     therapists: [],
     reports: [],
+      reportsLoading: false,
+  reportsError:   null,
+  reportsTotal:   0,
     forms: [],
     sendFormLoading: false,
     sendFormError: null,
@@ -128,7 +131,7 @@ export const useAdminStore = create((set, get) => {
     // ── assignTherapist ──────────────────────────────────────────────────────────
     assignTherapist: async (requestId, therapistId) => {
       const data = await unwrap(
-        await fetch(`${API}/api/admin/requests/${requestId}/assign`, {
+        await fetch(`${API}/api/requests/${requestId}/assign`, {
           method: "PATCH",
           headers: authHeaders(),
           body: JSON.stringify({ therapist_id: therapistId }),
@@ -191,6 +194,32 @@ export const useAdminStore = create((set, get) => {
       }));
       return data;
     },
+    flagReport: async (reportId, reason) => {
+  const data = await unwrap(
+    await fetch(`${API}/api/admin/reports/${reportId}/flag`, {
+      method:  "PATCH",
+      headers: authHeaders(),
+      body:    JSON.stringify({ reason }),
+    })
+  );
+  set((s) => ({
+    reports: s.reports.map((r) =>
+      r.id === reportId
+        ? { ...r, status: "flagged", flag_reason: reason, flagged_at: new Date().toISOString() }
+        : r
+    ),
+  }));
+  return data;
+},
+ 
+      downloadReport: async (reportId) => {
+    const data = await unwrap(
+      await fetch(`${API}/api/admin/reports/${reportId}/download`, {
+        headers: authHeaders(),
+      })
+    );
+    return data.url;
+  },
 
     // ── fetchForms
     fetchForms: async (params = {}) => {

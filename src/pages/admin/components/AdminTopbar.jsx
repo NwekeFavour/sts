@@ -48,12 +48,7 @@ export default function AdminTopbar({ title, subtitle, onMenuClick }) {
       {/* Right */}
       <div className="flex items-center gap-2 sm:gap-3">
        
-
-        {/* Help */}
-        <button className="hidden sm:flex w-8 h-8 rounded-xl bg-gray-50 border border-gray-200 items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all">
-          <HelpCircle size={15} />
-        </button>
-
+       
 
         {/* User pill — shows real data from fetchMe, skeleton while loading */}
         <button className="flex items-center gap-2 pl-1 pr-2 sm:pr-3 py-1 rounded-xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200">

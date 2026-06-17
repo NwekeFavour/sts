@@ -1,5 +1,5 @@
 // AdminSidebar.jsx
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, UserCog, ClipboardList,
   FileText, Bell, Settings, LogOut, ClipboardCheck,
@@ -53,10 +53,20 @@ export default function AdminSidebar({ open, setOpen }) {
   // not here. Sidebar just consumes whatever is already in the store.
   const user   = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const navigate = useNavigate();
 
   const roleLabel = user?.role
     ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
     : "—";
+
+      const displayName = user?.name ?? "Admin";
+  const initials    = displayName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
 
   const stats = useMemo(() => ({
     pendingRequests:  requests.filter((r) => r.status === "pending").length,
@@ -64,12 +74,12 @@ export default function AdminSidebar({ open, setOpen }) {
     pendingReports:   reports.filter((r) => r.status === "pending").length,
     pendingForms:     forms.filter((f) => f.status === "pending").length,
     totalRequests:    requests.length,
-    totalCases:       requests.filter((r) => ["assigned", "in-progress"].includes(r.status)).length,
+    totalCases:       requests.filter((r) => ["assigned", "in_progress"].includes(r.status)).length,
   }), [requests, therapists, reports, forms]);
 
-  function handleLogout() {
-    logout();
-    window.location.href = "/login";
+  async function handleLogout() {
+    await logout();
+    navigate("/login")
   }
 
   return (
@@ -90,7 +100,9 @@ export default function AdminSidebar({ open, setOpen }) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-[#2E2E30]">
           <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="St. Stephens Family" className="w-8 h-8 rounded-lg object-cover" />
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#E8890C] to-[#F4A832] flex items-center justify-center text-white text-xs font-bold">
+            {!user ? "…" : initials}
+          </div>
             <div className="leading-tight">
               <p className="text-white text-xs font-bold">St. Stephen's</p>
               <p className="text-[#636366] text-[10px]">Family {roleLabel}</p>

@@ -90,7 +90,7 @@ const useAuthStore = create(
       // ── Internal ───────────────────────────────────────────────────────────
       _setLoading: () => set({ status: "loading", error: null }),
       _setError: (msg) => set({ status: "error", error: msg }),
-      _clearError: () => set({ error: null }),
+      _clearError: () => set({ status: "idle" ,error: null }),
 
       // Called on app mount to rehydrate user profile from the server.
       // Uses the userId decoded from the stored token — nothing extra in localStorage.
@@ -312,7 +312,27 @@ const useAuthStore = create(
           throw err;
         }
       },
+          logout: async () => {
+  const { session } = get();
+  const token = session?.access_token;
+ 
+  // Best-effort server-side revocation — never blocks local cleanup
+  if (token) {
+    try {
+      await fetch(`${API}/api/auth/logout`, {
+        method: 'POST',
+        headers: authHeaders(token),
+        body: JSON.stringify({ refresh_token: session?.refresh_token }),
+      });
+    } catch (err) {
+      console.warn('[logout] server revocation failed, clearing local session anyway:', err.message);
+    }
+  }
+ 
+  set({ user: null, session: null, status: 'idle', error: null });
+},
     }),
+ 
 
     // ── Persist config ─────────────────────────────────────────────────────
     // Only session tokens are written to localStorage.

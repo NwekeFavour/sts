@@ -515,6 +515,51 @@ async function sendAdminNewApplicationEmail({
   });
 }
 
+async function sendReportFlaggedEmail({ to, therapistName, childName, reportTitle, reason }) {
+  await sendEmail({
+    to,
+    name: therapistName,
+    subject: `Action needed: report flagged — ${childName} · ${BRAND.name}`,
+    htmlContent: baseTemplate({
+      preheader: `Admin has flagged your report for ${childName} and needs a correction.`,
+      body: `
+        <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#C0392B;text-transform:uppercase;letter-spacing:0.8px;">
+          Report Flagged
+        </p>
+ 
+        <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:${BRAND.dark};line-height:1.3;">
+          A report needs your attention
+        </h1>
+ 
+        <p style="font-size:14px;color:#444;line-height:1.7;margin:0 0 20px;">
+          Hi ${therapistName},
+        </p>
+ 
+        <p style="font-size:14px;color:#444;line-height:1.7;margin:0 0 24px;">
+          Admin has reviewed your report <strong>"${reportTitle}"</strong> for
+          <strong>${childName}</strong> and flagged it for correction.
+        </p>
+ 
+        <div style="background:#FDECEA;border-left:4px solid #C0392B;border-radius:0 10px 10px 0;padding:16px 20px;margin-bottom:24px;">
+          <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#C0392B;text-transform:uppercase;letter-spacing:0.08em;">
+            Reason for flag
+          </p>
+          <p style="margin:0;font-size:14px;color:#374151;line-height:1.7;">${reason}</p>
+        </div>
+ 
+        <p style="font-size:14px;color:#444;line-height:1.7;margin:0 0 20px;">
+          Please log into your therapist portal, review the feedback, and upload a corrected
+          report for this case.
+        </p>
+ 
+        ${ctaButton('Go to My Reports →', `${BRAND.website}/therapist/reports`)}
+ 
+        ${infoPill('💬', `Questions? Reach out at ${BRAND.supportEmail}`)}
+      `,
+    }),
+  });
+}
+
 // ─── 6. Admin — new help request submitted ────────────────────────────────────
 async function sendAdminNewHelpRequestEmail({
   to,
@@ -567,7 +612,7 @@ async function sendAdminNewHelpRequestEmail({
           </p>
         </div>
 
-        ${ctaButton("Review Request →", `${BRAND.website}/admin/requests/}`)}
+        ${ctaButton("Review Request →", `${BRAND.website}/admin/requests}`)}
       `,
     }),
   });
@@ -854,6 +899,7 @@ async function sendPatientAssignedToTherapistEmail({
   childAge,
   location,
   notes,
+  primaryConcerns,
   parentEmail,
 }) {
   await sendEmail({
@@ -914,6 +960,18 @@ async function sendPatientAssignedToTherapistEmail({
         </div>`
             : ""
         }
+
+        ${
+          primaryConcerns
+            ? `
+        <div style="background:${BRAND.light};border-left:4px solid ${BRAND.primary};border-radius:0 10px 10px 0;padding:16px 20px;margin-bottom:24px;">
+          <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:${BRAND.primary};text-transform:uppercase;letter-spacing:0.08em;">
+            Concerns from parent
+          </p>
+          <p style="margin:0;font-size:13px;color:#374151;line-height:1.8;white-space:pre-wrap;">${escapeHtml(primaryConcerns)}</p>
+        </div>`
+            : ""
+        }
  
         <!-- Action -->
         <div style="background:#FFF8E6;border:1px solid #F0D080;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
@@ -945,6 +1003,57 @@ function infoRow(icon, label, value) {
     </table>`;
 }
 
+
+async function sendReportUploadedEmail({
+  to,
+  therapistName,
+  childName,
+  parentName,
+  reportTitle,
+  reportId,
+  requestId,
+}) {
+  await sendEmail({
+    to,
+    name: "Admin",
+    subject: `New report uploaded — ${childName} · ${BRAND.name}`,
+    htmlContent: baseTemplate({
+      preheader: `${therapistName} has uploaded a report for ${childName}.`,
+      body: `
+        <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:${BRAND.accent};text-transform:uppercase;letter-spacing:0.8px;">
+          Report Submitted
+        </p>
+ 
+        <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:${BRAND.dark};line-height:1.3;">
+          A new report is ready for review
+        </h1>
+ 
+        <p style="font-size:14px;color:#444;line-height:1.7;margin:0 0 24px;">
+          <strong>${therapistName}</strong> has uploaded a report for
+          <strong>${childName}</strong>. The case status has been automatically
+          updated to <em>in progress</em>.
+        </p>
+ 
+        <div style="background:${BRAND.light};border:1px solid ${BRAND.border};border-radius:12px;padding:16px 18px;margin-bottom:24px;">
+          ${infoRow("📄", "Report title",  reportTitle)}
+          <div style="height:8px;"></div>
+          ${infoRow("👦", "Child",         childName)}
+          <div style="height:8px;"></div>
+          ${infoRow("👤", "Parent",        parentName)}
+          <div style="height:8px;"></div>
+          ${infoRow("🩺", "Therapist",     therapistName)}
+        </div>
+ 
+        ${ctaButton("Review Report →", `${BRAND.website}/admin/reports`)}
+ 
+        ${infoPill("🔄", "Case status has been set to <strong>in progress</strong>.")}
+        ${infoPill("📋", `Report ID: <strong>#${reportId}</strong> · Case ID: <strong>#${requestId}</strong>`)}
+      `,
+    }),
+  });
+}
+ 
+
 module.exports = {
   sendAdminNewApplicationEmail,
   sendApplicationReceivedEmail,
@@ -955,9 +1064,11 @@ module.exports = {
   sendApplicationStatusEmail,
   sendFormEmail,
   sendLabUploadConfirmationEmail,
+  sendReportUploadedEmail,
   // ── new ──
   sendAdminNewHelpRequestEmail,
   sendParentRequestReceivedEmail,
   sendTherapistAssignedToParentEmail,
   sendPatientAssignedToTherapistEmail,
+  sendReportFlaggedEmail
 };

@@ -26,7 +26,7 @@ const STEPS = [
     duration: "5–10 mins",
     desc: "When you're ready to speak with a therapist, fill in the Request Help form. You'll share some basic information about your child and upload a short video, this helps our team understand your child's needs before your first session.",
     note: "A short video of your child helps our therapists prepare a more personalised initial review.",
-    cta: { label: "Request Help", to: "/request-therapist" },
+    cta: { label: "Request Help", to: "/new/?therapist=true" },
     accent: "#EFF5F0",
     tag: "Video of child required",
   },
@@ -126,7 +126,7 @@ export default function OurProcess() {
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
               </Link>
               <Link
-                to="/request-therapist"
+                to="/new/?therapist=true"
                 className="px-6 py-3.5 border border-white/30 text-white font-medium rounded-full hover:bg-white/10 transition-all text-sm"
               >
                 Request Help Now
@@ -321,13 +321,7 @@ export default function OurProcess() {
             >
               Talk to Stephanie
               <span className="w-2 h-2 rounded-full bg-[#513424] animate-pulse" />
-            </Link>
-            <Link
-              to="/request-therapist"
-              className="px-6 py-3.5 border border-white/30 text-white font-medium rounded-full text-sm hover:bg-white/10 transition-all"
-            >
-              Request Help →
-            </Link>
+            </Link>          
           </div>
         </div>
       </section>

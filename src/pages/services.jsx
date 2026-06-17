@@ -92,7 +92,7 @@ export default function Services() {
             </p>
             <div className="flex flex-wrap gap-4 mt-10">
               <Link
-                to="/request-therapist"
+                to="/new/?therapist=true"
                 className="px-6 py-3.5 bg-[#513424] text-white font-medium rounded-full hover:bg-[#6B4530] transition-all text-sm inline-flex items-center gap-2"
               >
                 Request Support
@@ -214,13 +214,7 @@ export default function Services() {
                     className="px-5 py-2.5 bg-[#C8A97E] text-[#1A1A1A] font-semibold rounded-full text-sm hover:opacity-90 transition-all"
                   >
                     See How It Works →
-                  </Link>
-                  <Link
-                    to="/request-therapist"
-                    className="px-5 py-2.5 border border-white/20 text-white rounded-full text-sm hover:bg-white/10 transition-all"
-                  >
-                    Request Support
-                  </Link>
+                  </Link>                  
                 </div>
               </div>
             </div>

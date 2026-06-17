@@ -143,11 +143,11 @@ export default function AboutUs() {
                   Our Mission
                 </p>
 
-                <h2 className="text-4xl lg:text-[50px] font-bold leading-tight">
+                <h2 className="text-3xl lg:text-[50px] font-bold leading-tight">
                   Empowering children and strengthening families every day.
                 </h2>
 
-                <p className="mt-8 text-lg text-gray-200 leading-relaxed max-w-2xl">
+                <p className="mt-8 md:text-lg text-[16px] text-gray-200 leading-relaxed max-w-2xl">
                   We provide compassionate support, therapy resources,
                   educational guidance, and community-centered programs designed
                   to help every child reach their full potential.

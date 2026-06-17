@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Logo from "../assets/images/logo.png";
 import useAuthStore from "../store/useAuthStore";
 import { useNavigate } from "react-router-dom";
 
 export default function AuthPages() {
   const [pages, setPages] = useState("login");
-  const { login, status, error } = useAuthStore();
+  const { login, status, error, _clearError  } = useAuthStore();
 
   const navigate = useNavigate();
 
@@ -16,13 +16,22 @@ export default function AuthPages() {
 
     try {
       const { user } = await login({ email, password });
-      navigate(user.role === "admin" ? "/admin" : "/dashboard");
+      navigate(user.role === "admin" ? "/admin" : "/therapist");
 
     } catch (err) {
       console.error("Login failed:", err);
     }
   };
 
+  useEffect(() => {
+  if (status === "error") {
+    const timer = setTimeout(() => {
+      _clearError();
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }
+}, [status, _clearError]);
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="w-full max-w-6xl grid lg:grid-cols-2 bg-white rounded-3xl overflow-hidden shadow-2xl">

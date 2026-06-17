@@ -90,4 +90,30 @@ router.post(
   resendInvite
 );
 
+router.post('/logout', authenticate, async (req, res) => {
+  const { refresh_token } = req.body;
+ 
+  try {
+    // signOut with the user's access token invalidates their current session
+    // server-side. We use the admin client with the user's JWT scope so this
+    // only revokes THIS user's session, not a global admin action.
+    const { error } = await supabaseAdmin.auth.admin.signOut(
+      req.headers.authorization?.replace('Bearer ', ''),
+      'global' // revokes all sessions for this user; use 'local' for just this device
+    );
+ 
+    if (error) {
+      console.warn('[POST /auth/logout] signOut warning:', error.message);
+      // Don't fail the request — client will clear local state regardless
+    }
+ 
+    return res.status(200).json({ message: 'Logged out successfully.' });
+  } catch (err) {
+    console.error('[POST /auth/logout]', err);
+    // Still return 200 — client-side cleanup should proceed even if server
+    // revocation fails, otherwise users get stuck unable to log out at all
+    return res.status(200).json({ message: 'Logged out.', warning: err.message });
+  }
+});
+ 
 module.exports = router;

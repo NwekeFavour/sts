@@ -9,12 +9,12 @@ import toast from 'react-hot-toast'
 const STATUS_BADGE = {
   pending:       'bg-amber-100 text-amber-700',
   assigned:      'bg-blue-100 text-blue-700',
-  'in-progress': 'bg-purple-100 text-purple-700',
+  'in_progress': 'bg-purple-100 text-purple-700',
   completed:     'bg-green-100 text-green-700',
   cancelled:     'bg-gray-100 text-gray-500',
 }
 
-const TABS = ['All', 'Pending', 'Assigned', 'In Progress', 'Completed']
+const TABS = ['All', 'Pending', 'Assigned', 'In_Progress', 'Completed']
 
 const API = import.meta.env.VITE_API_URL
 
@@ -347,7 +347,7 @@ export default function AdminRequests() {
   const counts = {
     pending:     (requests || []).filter(r => r.status === 'pending').length,
     assigned:    (requests || []).filter(r => r.status === 'assigned').length,
-    inProgress:  (requests || []).filter(r => r.status === 'in-progress').length,
+    inProgress:  (requests || []).filter(r => r.status === 'in_progress').length,
   }
 
   if (requestsLoading) return (
@@ -377,7 +377,7 @@ export default function AdminRequests() {
         {[
           { label: 'Pending requests',     count: counts.pending,    color: 'text-amber-600',  bg: 'bg-amber-50 border-[#dadada]'  },
           { label: 'Awaiting assignment',  count: counts.pending,    color: 'text-blue-600',   bg: 'bg-blue-50 border-blue-200'    },
-          { label: 'Active cases',         count: counts.inProgress, color: 'text-purple-600', bg: 'bg-purple-50 border-purple-200'},
+          { label: 'In Progress',         count: counts.inProgress, color: 'text-purple-600', bg: 'bg-purple-50 border-purple-200'},
         ].map(a => (
           <div key={a.label} className={`${a.bg} border rounded-2xl px-5 py-4 flex items-end justify-between`}>
             <div>

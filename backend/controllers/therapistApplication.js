@@ -9,47 +9,23 @@ const {
 exports.applyTherapist = async (req, res) => {
   try {
     const {
-      // ── Always present ──────────────────────────────────────────────────────
-      fullName,
-      email,
-      phone,
-      coverLetter,
-      experienceLevel, // 'beginner' | 'intermediate' | 'expert'
-
-      // ── Beginner + Intermediate + Expert ───────────────────────────────────
-      schoolBackground, // where they studied
-      courseStudied, // beginner/intermediate — course name
-      comfortWithSpectrum, // beginner/intermediate — how they feel around autistic kids
-      irritationOrFrustration, // beginner/intermediate — frustration handling
-      whyTherapy, // beginner only — motivation
-
-      // ── Intermediate + Expert ───────────────────────────────────────────────
-      yearsOfExperience,
-      specialization,
-      resumeLink,
-
-      // ── Expert only ─────────────────────────────────────────────────────────
-      degreeLevel, // e.g. "M.Sc. ABA"
-      licenseNumber,
-      approachPhilosophy, // clinical philosophy
+      fullName, email, phone, coverLetter, experienceLevel,
+      schoolBackground, courseStudied, comfortWithSpectrum,
+      irritationOrFrustration, whyTherapy,
+      yearsOfExperience, specialization, resumeLink,
+      degreeLevel, licenseNumber, approachPhilosophy,
     } = req.body;
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Valid email required." });
+      return res.status(400).json({ success: false, message: "Valid email required." });
     }
-    // ── Validation: only truly universal required fields ──────────────────────
     if (!fullName || !email || !coverLetter || !experienceLevel) {
       return res.status(400).json({
         success: false,
-        message:
-          "Certain fields are required for all applicants: full name, email, cover letter, experience level",
+        message: "Certain fields are required for all applicants: full name, email, cover letter, experience level",
       });
     }
 
-
-    
     const VALID_LEVELS = ["beginner", "intermediate", "expert"];
     if (!VALID_LEVELS.includes(experienceLevel)) {
       return res.status(400).json({
@@ -58,78 +34,44 @@ exports.applyTherapist = async (req, res) => {
       });
     }
 
-
-    if (experienceLevel === "intermediate" || experienceLevel === "expert") {
-      if (!yearsOfExperience) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Years of experience required." });
-      }
+    if ((experienceLevel === "intermediate" || experienceLevel === "expert") && !yearsOfExperience) {
+      return res.status(400).json({ success: false, message: "Years of experience required." });
     }
     if (experienceLevel === "expert") {
-      if (!licenseNumber) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "License number required for expert applicants.",
-          });
-      }
-      if (!degreeLevel) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Degree level required for expert applicants.",
-          });
-      }
+      if (!licenseNumber) return res.status(400).json({ success: false, message: "License number required for expert applicants." });
+      if (!degreeLevel)   return res.status(400).json({ success: false, message: "Degree level required for expert applicants." });
     }
 
-    // ── Build qualifications string from level-specific fields ────────────────
-    // Consolidates the school/degree info into the existing qualifications column
     const qualifications =
       [
         schoolBackground && `School: ${schoolBackground}`,
-        courseStudied && `Course: ${courseStudied}`,
-        degreeLevel && `Degree: ${degreeLevel}`,
-      ]
-        .filter(Boolean)
-        .join(" | ") || null;
+        courseStudied    && `Course: ${courseStudied}`,
+        degreeLevel      && `Degree: ${degreeLevel}`,
+      ].filter(Boolean).join(" | ") || null;
 
-    // ── Store ALL level-specific answers in cover_letter as structured text ───
-    // This avoids needing new DB columns for each question while keeping answers readable
     const fullCoverLetter = [
       coverLetter,
-      comfortWithSpectrum &&
-        `\n\n[Comfort with spectrum children]\n${comfortWithSpectrum}`,
-      irritationOrFrustration &&
-        `\n\n[Handling frustration]\n${irritationOrFrustration}`,
-      whyTherapy && `\n\n[Motivation for therapy work]\n${whyTherapy}`,
-      approachPhilosophy &&
-        `\n\n[Clinical approach / philosophy]\n${approachPhilosophy}`,
-    ]
-      .filter(Boolean)
-      .join("");
+      comfortWithSpectrum      && `\n\n[Comfort with spectrum children]\n${comfortWithSpectrum}`,
+      irritationOrFrustration  && `\n\n[Handling frustration]\n${irritationOrFrustration}`,
+      whyTherapy               && `\n\n[Motivation for therapy work]\n${whyTherapy}`,
+      approachPhilosophy       && `\n\n[Clinical approach / philosophy]\n${approachPhilosophy}`,
+    ].filter(Boolean).join("");
 
     const { data, error } = await supabaseAdmin
       .from("therapist_applications")
-      .insert([
-        {
-          full_name: fullName,
-          email,
-          phone: phone || null,
-          qualifications: qualifications || null,
-          years_of_experience: yearsOfExperience
-            ? parseInt(yearsOfExperience, 10)
-            : null,
-          specialization: specialization || null,
-          license_number: licenseNumber || null,
-          resume_link: resumeLink || null,
-          cover_letter: fullCoverLetter || null,
-          experience_level: experienceLevel,
-          status: "pending",
-        },
-      ])
+      .insert([{
+        full_name:           fullName,
+        email,
+        phone:               phone || null,
+        qualifications:      qualifications || null,
+        years_of_experience: yearsOfExperience ? parseInt(yearsOfExperience, 10) : null,
+        specialization:      specialization || null,
+        license_number:      licenseNumber || null,
+        resume_link:         resumeLink || null,
+        cover_letter:        fullCoverLetter || null,
+        experience_level:    experienceLevel,
+        status:              "pending",
+      }])
       .select()
       .single();
 
@@ -139,21 +81,20 @@ exports.applyTherapist = async (req, res) => {
 
     const applicationId = data.id;
 
-    return res.status(201).json({ success: true, applicationId });
+    // ── Respond first, then fire emails outside the request cycle ─────────────
+    res.status(201).json({ success: true, applicationId });
 
-    Promise.allSettled([
+    setImmediate(() => {
       sendApplicationReceivedEmail({
         to: email,
         name: fullName,
         applicationId,
         experienceLevel,
-      }).catch((e) =>
-        console.error("[applyTherapist] applicant email failed:", e.message),
-      ),
+      }).catch((e) => console.error("[applyTherapist] applicant email failed:", e.message));
 
       sendAdminNewApplicationEmail({
-        to: process.env.EMAIL_FROM,
-        name: fullName,
+        to:                process.env.EMAIL_FROM,
+        name:              fullName,
         email,
         phone,
         specialization,
@@ -161,10 +102,9 @@ exports.applyTherapist = async (req, res) => {
         licenseNumber,
         experienceLevel,
         applicationId,
-      }).catch((e) =>
-        console.error("[applyTherapist] admin email failed:", e.message),
-      ),
-    ]);
+      }).catch((e) => console.error("[applyTherapist] admin email failed:", e.message));
+    });
+
   } catch (err) {
     console.error("[applyTherapist]", err);
     return res.status(500).json({ success: false, message: err.message });
@@ -393,7 +333,7 @@ exports.promoteToTherapist = async (req, res) => {
     const { data: existing } = await supabaseAdmin
       .from("therapist_applications")
       .select("id")
-      .eq("email", app.email)
+      .eq("email", app.email)  
       .eq("status", "pending")
       .maybeSingle();
 

@@ -24,6 +24,8 @@ import { Toaster } from "react-hot-toast";
 import { AdminRoute, GuestRoute } from "./components/ProtectedRoute";
 import LabUploadPage from "./pages/labupload";
 import useAuthStore from "./store/useAuthStore";
+import { Loader2 } from "lucide-react";
+import { therapistRoutes } from "./pages/Therapist/routes";
 
 function App() {
      const fetchMe = useAuthStore((state) => state.fetchMe);
@@ -42,7 +44,12 @@ function App() {
     init();
   }, []);
 
-  if (!ready) return <div>Loading...</div>;
+  
+  
+
+  if (!ready) return <div className="flex justify-center h-[100vh] items-center">
+    <Loader2 size={30} className="" />
+    </div>;
 
   return (
     <>
@@ -65,6 +72,8 @@ function App() {
         <Route path="/invite/reset-password" element={<ResetPassword />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/lab-upload/:token" element={<LabUploadPage/>}/>
+
+        {therapistRoutes}
 
         <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index element={<AdminDashboard />} />

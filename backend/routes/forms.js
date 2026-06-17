@@ -153,11 +153,9 @@ router.post("/lab-upload/submit", upload.single("file"), async (req, res) => {
         .json({ error: "This form has already been submitted." });
     }
     if (form.data?.upload_token !== token) {
-      return res
-        .status(400)
-        .json({
-          error: "This link is no longer valid. Please request a new one.",
-        });
+      return res.status(400).json({
+        error: "This link is no longer valid. Please request a new one.",
+      });
     }
 
     // ── 2. Get parent email from form data ────────────────────────────────────
@@ -231,7 +229,7 @@ router.get("/", ...guard, async (req, res) => {
         `
         id, status, file_url, data, sent_at, submitted_at, created_at,
         request:requests!request_id ( id, child_name, parent_name, parent_email )
-      `, 
+      `,
       )
       .order("created_at", { ascending: false });
 
@@ -263,38 +261,45 @@ router.get("/", ...guard, async (req, res) => {
 // POST /api/forms/send
 router.post("/send", ...guard, async (req, res) => {
   const { requestId, advice, parentEmail, parentName, childName } = req.body;
-
-  // Validate required fields up front with clear messages
+ 
   const missing = [];
   if (!requestId) missing.push("requestId");
   if (!advice?.trim()) missing.push("advice");
   if (!parentEmail) missing.push("parentEmail");
   if (missing.length) {
-    return res
-      .status(422)
-      .json({ error: `Missing required fields: ${missing.join(", ")}` });
+    return res.status(422).json({ error: `Missing required fields: ${missing.join(", ")}` });
   }
-
+ 
   try {
-    // ── 1. Verify request exists ──────────────────────────────────────────────
-    // Only select columns that actually exist on the requests table
+    // ── 1. Verify request exists ────────────────────────────────────────────
     const { data: request, error: reqErr } = await supabaseAdmin
       .from("requests")
-      .select("id, parent_name, child_name")
+      .select("id, parent_name, child_name, status, therapist_id")
       .eq("id", requestId)
-      .maybeSingle(); // maybeSingle: returns null instead of error when not found
-
+      .maybeSingle();
+ 
     if (reqErr) {
       console.error("[POST /forms/send] request lookup error:", reqErr);
       return res.status(500).json({
-        error: "Database error looking up request.",
-        detail: reqErr.message,
+        error: "We couldn't process your request right now.",
+        message: "Please try again in a few moments. If the issue continues, contact support.",
       });
     }
     if (!request) {
       return res.status(404).json({ error: `Request ${requestId} not found.` });
     }
-
+ 
+    // Real guard, if you want one: block sending a form to a case that
+    // already has a therapist assigned and is past the intake stage.
+    // Adjust or remove this if it doesn't match your actual workflow.
+    if (request.therapist_id && request.status !== "pending") {
+      return res.status(400).json({
+        error: "Cannot send an intake form: this case already has a therapist assigned.",
+      });
+    }
+ 
+    // ── 2. Block duplicate sends if a form was already submitted ───────────
+    // This no longer touches requests.status — that's not this route's job.
     const { data: existingForm, error: formCheckErr } = await supabaseAdmin
       .from("forms")
       .select("id, status")
@@ -302,24 +307,16 @@ router.post("/send", ...guard, async (req, res) => {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-
+ 
     if (formCheckErr) throw formCheckErr;
-
+ 
     if (existingForm?.status === "submitted") {
-      // Optionally close the request
-      await supabaseAdmin
-        .from("requests")
-        .update({
-          status: "completed",
-          completed_at: new Date().toISOString(),
-        })
-        .eq("id", requestId);
-
       return res.status(409).json({
-        error: "This patient has already submitted the requested form.",
+        error: "This parent has already submitted the form for this request.",
       });
     }
-    // ── 2. Insert form row ────────────────────────────────────────────────────
+ 
+    // ── 3. Insert form row ──────────────────────────────────────────────────
     const { data: form, error: insertErr } = await supabaseAdmin
       .from("forms")
       .insert({
@@ -330,12 +327,12 @@ router.post("/send", ...guard, async (req, res) => {
       })
       .select("id, status, sent_at")
       .single();
-
+ 
     if (insertErr) throw insertErr;
-
-    // ── 3. Generate upload token and patch into data ──────────────────────────
+ 
+    // ── 4. Generate upload token ────────────────────────────────────────────
     const uploadToken = generateUploadToken(form.id);
-
+ 
     const { error: patchErr } = await supabaseAdmin
       .from("forms")
       .update({
@@ -346,12 +343,12 @@ router.post("/send", ...guard, async (req, res) => {
         },
       })
       .eq("id", form.id);
-
+ 
     if (patchErr) throw patchErr;
-
-    // ── 4. Send email ─────────────────────────────────────────────────────────
+ 
+    // ── 5. Send email ───────────────────────────────────────────────────────
     const uploadUrl = `${process.env.CLIENT_URL}/lab-upload/${uploadToken}`;
-
+ 
     await sendFormEmail({
       to: parentEmail,
       parentName: parentName ?? request.parent_name,
@@ -359,8 +356,8 @@ router.post("/send", ...guard, async (req, res) => {
       advice: advice.trim(),
       uploadUrl,
     });
-
-    // ── 5. Log activity ───────────────────────────────────────────────────────
+ 
+    // ── 6. Log activity ─────────────────────────────────────────────────────
     await Promise.resolve(
       supabaseAdmin.rpc("log_activity", {
         p_actor_id: req.user.id,
@@ -370,12 +367,11 @@ router.post("/send", ...guard, async (req, res) => {
         p_message: `Form has been sent to ${parentName ?? request.parent_name} for ${childName ?? request.child_name}`,
       }),
     ).catch(console.warn);
-
+ 
     return res.status(201).json({
       message: "Form sent successfully.",
       form: {
         ...form,
-        // title:        FORM_TYPE_LABELS[formType],
         child_name: childName ?? request.child_name,
         parent_name: parentName ?? request.parent_name,
         parent_email: parentEmail,
@@ -384,12 +380,9 @@ router.post("/send", ...guard, async (req, res) => {
     });
   } catch (err) {
     console.error("[POST /forms/send]", err);
-    return res
-      .status(500)
-      .json({ error: "Failed to send form.", detail: err.message });
+    return res.status(500).json({ error: "Failed to send form.", detail: err.message });
   }
 });
-
 // POST /api/forms/:id/resend
 router.post("/:id/resend", ...guard, async (req, res) => {
   console.log("[resend] HIT - params.id:", req.params.id);

@@ -103,7 +103,7 @@ export default function Home() {
               <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
             </a>
             <a
-              href="/request-therapist"
+              href="/new/?therapist=true"
               className="px-6 py-3.5 border border-white/30 text-white font-medium rounded-full hover:bg-white/10 transition-all duration-200 text-sm backdrop-blur-sm"
             >
               Request For Help
@@ -129,20 +129,19 @@ export default function Home() {
             </p>
             <div className="flex items-center gap-3">
               <div className="flex -space-x-4 overflow-hidden">
-                {[
-                  "https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=400&auto=format&fit=crop",
-                  "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=400&auto=format&fit=crop",
-                  "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=400&auto=format&fit=crop",
-                  "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=400&auto=format&fit=crop",
-                ].map((img, i) => (
-                  <img
-                    key={i}
-                    src={img}
-                    alt="Therapy specialist"
-                    className="h-11 w-11 rounded-full object-cover border-2 border-white/20 shadow-md hover:scale-105 transition-transform duration-200"
-                  />
-                ))}
-              </div>
+  {[
+    "https://images.unsplash.com/photo-1632054229892-21103035a686?q=80&w=400&auto=format&fit=crop&fit=faces",
+    "https://images.unsplash.com/photo-1643297654416-05795d62e39c?q=80&w=400&auto=format&fit=crop&fit=faces",
+    "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?q=80&w=400&auto=format&fit=crop&fit=faces",
+  ].map((img, i) => (
+    <img
+      key={i}
+      src={img}
+      alt="Therapy specialist"
+      className="h-11 w-11 rounded-full object-cover border-2 border-white/20 shadow-md hover:scale-105 transition-transform duration-200"
+    />
+  ))}
+</div>
               <button className="h-10 px-4 rounded-full border border-white/20 text-xs font-medium text-stone-300 hover:bg-white/10 transition-colors backdrop-blur-sm">
                 See all →
               </button>
@@ -341,7 +340,7 @@ export default function Home() {
             <div className="lg:col-span-4 lg:text-right relative z-10">
               <a
                 href="/apply-therapist"
-                className="inline-block px-6 py-3.5 bg-[#fff] text-black font-semibold rounded-full hover:bg-[#d47e05] transition-colors text-sm"
+                className="inline-block px-6 py-3.5 bg-[#fff] text-black font-semibold rounded-full hover:bg-white/80 transition-colors text-sm"
               >
                 Apply to Become a Therapist →
               </a>
@@ -402,13 +401,13 @@ export default function Home() {
           </p>
           <div className="flex flex-wrap justify-center gap-4 pt-4">
             <Link
-              to="/request"
+              to="/new/?therapist=true"
               className="px-6 py-3.5 bg-[#513424] text-white font-medium rounded-full hover:bg-[#513424] transition-colors text-sm"
             >
               Request a Therapist
             </Link>
             <Link
-              to="/contact"
+              to="/contact-us"
               className="px-6 py-3.5 border border-stone-200 text-stone-700 font-medium rounded-full hover:bg-stone-50 transition-colors text-sm"
             >
               Talk to Us First

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useChatStore } from "../store/useChatStore";
 import useTherapistRequestStore from "../store/useTherapistRequestStore";
+import { useSearchParams } from "react-router-dom";
 
 
 export const STEPHANIE_CHARACTER = {
@@ -679,6 +680,14 @@ export default function StStephensChatbot() {
     fontSize: 13.5, marginBottom: 10, color: "#1a1a1a",
     outline: "none", background: "#EFF1EF", display: "block", boxSizing: "border-box",
   };
+
+  const [searchParams] = useSearchParams();
+
+useEffect(() => {
+  if (searchParams.get("therapist") === "true") {
+    openModal();
+  }
+}, [searchParams, openModal]);
 
   return (
     <div style={{ display: "flex", height: "100dvh", fontFamily: "system-ui,-apple-system,sans-serif", background: "#EFF1EF", overflow: "hidden" }}>

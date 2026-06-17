@@ -5,6 +5,7 @@
 const express = require('express');
 const { supabaseAdmin } = require('../config/db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { sendReportFlaggedEmail } = require('../utils/mail');
 
 const router = express.Router();
 const guard = [authenticate, requireRole('admin')];
@@ -54,7 +55,7 @@ router.get('/dashboard', ...guard, async (req, res) => {
     const stats = {
       pendingRequests:  requests.filter(r => r.status === 'pending').length,
       totalRequests:    requests.length,
-      totalCases:       requests.filter(r => ['assigned','in-progress'].includes(r.status)).length,
+      totalCases:       requests.filter(r => ['assigned','in_progress'].includes(r.status)).length,
       activeTherapists: therapists.filter(t => t.status === 'active').length,
       pendingReports:   reports.filter(r => r.status === 'pending').length,
       pendingForms:     forms.filter(f => f.status === 'pending').length,
@@ -130,43 +131,8 @@ router.get('/requests', ...guard, async (req, res) => {
   }
 });
 
-// ─── PATCH /api/admin/requests/:id/assign ────────────────────────────────────
-// Body: { therapist_id }
-router.patch('/requests/:id/assign', ...guard, async (req, res) => {
-  const { id } = req.params;
-  const { therapist_id } = req.body;
-  if (!therapist_id) return res.status(422).json({ error: 'therapist_id required' });
 
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('requests')
-      .update({
-        therapist_id,
-        status: 'assigned',
-        assigned_by: req.user.id,
-        assigned_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select('id, parent_name, child_name, status, therapist_id')
-      .single();
 
-    if (error) throw error;
-
-    // Log the activity
-    await supabaseAdmin.rpc('log_activity', {
-      p_actor_id:    req.user.id,
-      p_event_type:  'therapist_assigned',
-      p_entity_type: 'request',
-      p_entity_id:   id,
-      p_message:     `Therapist assigned to ${data.child_name}`,
-    });
-
-    return res.status(200).json({ message: 'Therapist assigned', request: data });
-  } catch (err) {
-    console.error('[PATCH /admin/requests/:id/assign]', err);
-    return res.status(500).json({ error: 'Failed to assign therapist' });
-  }
-});
 
 // ─── GET /api/admin/therapists ────────────────────────────────────────────────
 router.get('/therapists', ...guard, async (req, res) => {
@@ -192,7 +158,7 @@ router.get('/reports', ...guard, async (req, res) => {
     let query = supabaseAdmin
       .from('reports')
       .select(`
-        id, title, status, file_url, created_at,
+        id, title, status, file_url, is_final, created_at,
         therapist:profiles!therapist_id(id, full_name),
         request:requests!request_id(id, child_name, parent_name)
       `)
@@ -210,8 +176,25 @@ router.get('/reports', ...guard, async (req, res) => {
 });
 
 // ─── PATCH /api/admin/reports/:id/review ─────────────────────────────────────
+// Guard added: cannot review a report that's already reviewed or flagged.
 router.patch('/reports/:id/review', ...guard, async (req, res) => {
   try {
+    const { data: existing, error: fetchErr } = await supabaseAdmin
+      .from('reports')
+      .select('id, status, title, therapist_id')
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (fetchErr) throw fetchErr;
+    if (!existing) return res.status(404).json({ message: 'Report not found.' });
+
+    if (existing.status === 'reviewed') {
+      return res.status(400).json({ message: 'This report has already been reviewed.' });
+    }
+    if (existing.status === 'flagged') {
+      return res.status(400).json({ message: 'This report is flagged. Resolve the flag before marking it reviewed.' });
+    }
+
     const { data, error } = await supabaseAdmin
       .from('reports')
       .update({ status: 'reviewed' })
@@ -220,9 +203,114 @@ router.patch('/reports/:id/review', ...guard, async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    Promise.resolve(supabaseAdmin.rpc('log_activity', {
+      p_actor_id:    req.user.id,
+      p_event_type:  'report_reviewed',
+      p_entity_type: 'report',
+      p_entity_id:   req.params.id,
+      p_message:     `Report "${existing.title}" marked as reviewed`,
+    })).catch(console.warn);
+
     return res.status(200).json({ message: 'Report marked as reviewed', report: data });
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to update report' });
+    console.error('[PATCH /reports/:id/review]', err);
+    return res.status(500).json({ message: 'Failed to update report.' });
+  }
+});
+
+router.get('/reports/:id/download', ...guard, async (req, res) => {
+  try {
+    const { data: report, error } = await supabaseAdmin
+      .from('reports')
+      .select('file_url')
+      .eq('id', req.params.id)
+      .single();
+ 
+    if (error || !report) return res.status(404).json({ error: 'Report not found.' });
+    if (!report.file_url) return res.status(404).json({ error: 'No file attached.' });
+ 
+    const { data: signed, error: signErr } = await supabaseAdmin.storage
+      .from('lab-results')
+      .createSignedUrl(report.file_url, 60 * 60);
+ 
+    if (signErr) throw signErr;
+    return res.status(200).json({ url: signed.signedUrl });
+  } catch (err) {
+    console.error('[GET /admin/reports/:id/download]', err);
+    return res.status(500).json({ error: 'Failed to generate download URL.' });
+  }
+});
+
+// ─── PATCH /api/admin/reports/:id/flag ───────────────────────────────────────
+// Body: { reason: string }
+// Admin flags a report back to the therapist — e.g. wrong case selected,
+// missing info, accidentally marked final, etc.
+router.patch('/reports/:id/flag', ...guard, async (req, res) => {
+  const { reason } = req.body;
+  if (!reason?.trim()) {
+    return res.status(422).json({ message: 'A reason is required when flagging a report.' });
+  }
+
+  try {
+    const { data: existing, error: fetchErr } = await supabaseAdmin
+      .from('reports')
+      .select(`
+        id, title, status, therapist_id, request_id,
+        therapist:profiles!therapist_id ( id, full_name, email ),
+        request:requests!request_id ( child_name )
+      `)
+      .eq('id', req.params.id)
+      .maybeSingle();
+
+    if (fetchErr) throw fetchErr;
+    if (!existing) return res.status(404).json({ message: 'Report not found.' });
+
+    if (existing.status === 'reviewed') {
+      return res.status(400).json({ message: 'Cannot flag a report that has already been reviewed and approved.' });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('reports')
+      .update({
+        status:       'flagged',
+        flagged_at:   new Date().toISOString(),
+        flagged_by:   req.user.id,
+        flag_reason:  reason.trim(),
+      })
+      .eq('id', req.params.id)
+      .select('id, status, flag_reason, flagged_at')
+      .single();
+
+    if (error) throw error;
+
+    // Respond immediately
+    res.status(200).json({ message: 'Report flagged and sent back to therapist.', report: data });
+
+    // Log + notify therapist outside the request cycle
+    setImmediate(() => {
+      Promise.resolve(supabaseAdmin.rpc('log_activity', {
+        p_actor_id:    req.user.id,
+        p_event_type:  'report_flagged',
+        p_entity_type: 'report',
+        p_entity_id:   req.params.id,
+        p_message:     `Report "${existing.title}" flagged: ${reason.trim()}`,
+      })).catch(console.warn);
+
+      if (existing.therapist?.email) {
+        sendReportFlaggedEmail({
+          to:            existing.therapist.email,
+          therapistName: existing.therapist.full_name,
+          childName:     existing.request?.child_name ?? 'the patient',
+          reportTitle:   existing.title,
+          reason:        reason.trim(),
+        }).catch(e => console.warn('[flag] therapist email failed:', e.message));
+      }
+    });
+
+  } catch (err) {
+    console.error('[PATCH /reports/:id/flag]', err);
+    return res.status(500).json({ message: 'Failed to flag report.' });
   }
 });
 

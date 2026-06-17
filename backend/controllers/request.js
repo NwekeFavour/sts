@@ -1,12 +1,13 @@
 // controllers/requestController.js
-// Covers the full lifecycle of a help request from submission → assignment → completion
 
 const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { supabaseAdmin } = require("../config/db");
-const { sendPatientAssignedToTherapistEmail, sendTherapistAssignedToParentEmail } = require("../utils/mail");
+const {
+  sendPatientAssignedToTherapistEmail,
+  sendTherapistAssignedToParentEmail,
+} = require("../utils/mail");
 
-// ─── R2 client ────────────────────────────────────────────────────────────────
 const r2 = new S3Client({
   region: "auto",
   endpoint: process.env.R2_ENDPOINT,
@@ -18,14 +19,12 @@ const r2 = new S3Client({
 
 const BUCKET = process.env.R2_BUCKET_NAME;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function paginate(query, page = 1, limit = 20) {
   const from = (page - 1) * limit;
   return query.range(from, from + limit - 1);
 }
 
 // ─── GET /api/requests ────────────────────────────────────────────────────────
-// Admin: all requests, filterable + paginated
 exports.getAllRequests = async (req, res) => {
   try {
     const { status, page = 1, limit = 20, search } = req.query;
@@ -46,19 +45,13 @@ exports.getAllRequests = async (req, res) => {
       `, { count: "exact" })
       .order("created_at", { ascending: false });
 
-    if (status)  query = query.eq("status", status);
-    if (search)  query = query.ilike("parent_name", `%${search}%`);
+    if (status) query = query.eq("status", status);
+    if (search) query = query.ilike("parent_name", `%${search}%`);
 
     const { data, error, count } = await paginate(query, +page, +limit);
     if (error) throw error;
 
-    return res.status(200).json({
-      success: true,
-      data,
-      total: count,
-      page:  +page,
-      limit: +limit,
-    });
+    return res.status(200).json({ success: true, data, total: count, page: +page, limit: +limit });
   } catch (err) {
     console.error("[getAllRequests]", err);
     return res.status(500).json({ success: false, message: err.message });
@@ -66,7 +59,6 @@ exports.getAllRequests = async (req, res) => {
 };
 
 // ─── GET /api/requests/:id ────────────────────────────────────────────────────
-// Admin or assigned therapist: single request full detail
 exports.getRequest = async (req, res) => {
   try {
     const { id } = req.params;
@@ -74,20 +66,11 @@ exports.getRequest = async (req, res) => {
 
     const { data, error } = await supabaseAdmin
       .from("requests")
-      .select(`
-        *,
-        therapist:profiles!therapist_id (
-          id, full_name, email, specialization, phone
-        )
-      `)
+      .select(`*, therapist:profiles!therapist_id (id, full_name, email, specialization, phone)`)
       .eq("id", id)
       .single();
 
-    if (error || !data) {
-      return res.status(404).json({ success: false, message: "Request not found" });
-    }
-
-    // Therapists can only view their own assigned requests
+    if (error || !data) return res.status(404).json({ success: false, message: "Request not found" });
     if (role === "therapist" && data.therapist_id !== userId) {
       return res.status(403).json({ success: false, message: "Not authorised to view this request" });
     }
@@ -99,7 +82,6 @@ exports.getRequest = async (req, res) => {
 };
 
 // ─── GET /api/requests/:id/video-url ─────────────────────────────────────────
-// Admin or assigned therapist: short-lived signed URL to stream the child video
 exports.getVideoSignedUrl = async (req, res) => {
   try {
     const { id } = req.params;
@@ -111,20 +93,12 @@ exports.getVideoSignedUrl = async (req, res) => {
       .eq("id", id)
       .single();
 
-    if (error || !data) {
-      return res.status(404).json({ success: false, message: "Request not found" });
-    }
-
-    if (!data.video_key) {
-      return res.status(404).json({ success: false, message: "No video on this request" });
-    }
-
-    // Therapist must be assigned to this request
+    if (error || !data)     return res.status(404).json({ success: false, message: "Request not found" });
+    if (!data.video_key)    return res.status(404).json({ success: false, message: "No video on this request" });
     if (role === "therapist" && data.therapist_id !== userId) {
       return res.status(403).json({ success: false, message: "Not authorised to view this video" });
     }
 
-    // Signed URL valid 1 hour — enough to stream without permanent public access
     const url = await getSignedUrl(
       r2,
       new GetObjectCommand({ Bucket: BUCKET, Key: data.video_key }),
@@ -132,8 +106,7 @@ exports.getVideoSignedUrl = async (req, res) => {
     );
 
     return res.status(200).json({
-      success:    true,
-      url,
+      success: true, url,
       filename:   data.video_filename,
       childName:  data.child_name,
       parentName: data.parent_name,
@@ -146,7 +119,6 @@ exports.getVideoSignedUrl = async (req, res) => {
 };
 
 // ─── PATCH /api/requests/:id/assign ──────────────────────────────────────────
-// Admin: assign a therapist to a request
 exports.assignTherapist = async (req, res) => {
   try {
     const { id } = req.params;
@@ -156,7 +128,7 @@ exports.assignTherapist = async (req, res) => {
       return res.status(422).json({ success: false, message: "therapist_id is required" });
     }
 
-    // ── 1. Verify therapist ───────────────────────────────────────────────────
+    // 1. Verify therapist is active
     const { data: therapist, error: tErr } = await supabaseAdmin
       .from("profiles")
       .select("id, full_name, email, phone, specialization, status")
@@ -164,80 +136,56 @@ exports.assignTherapist = async (req, res) => {
       .eq("role", "therapist")
       .single();
 
-    if (tErr || !therapist) {
-      return res.status(404).json({ success: false, message: "Therapist not found" });
-    }
+    if (tErr || !therapist) return res.status(404).json({ success: false, message: "Therapist not found" });
     if (therapist.status !== "active") {
-      return res.status(400).json({
-        success: false,
-        message: `Therapist is ${therapist.status} — only active therapists can be assigned`,
-      });
+      return res.status(400).json({ success: false, message: `Therapist is ${therapist.status} — only active therapists can be assigned` });
     }
 
-    // ── 2. Fetch request + parent email in parallel ───────────────────────────
-    const [
-      { data: request, error: rErr },
-      { data: formRow },
-    ] = await Promise.all([
-      supabaseAdmin
-        .from("requests")
-        .select("id, child_name, parent_name, child_age, location, notes")
-        .eq("id", id)
-        .maybeSingle(),
+    // 2. Fetch request
+    const { data: request, error: rErr } = await supabaseAdmin
+      .from("requests")
+      .select("id, child_name, parent_name, parent_email, child_age, location, additional_notes, primary_concerns")
+      .eq("id", id)
+      .maybeSingle();
 
-      supabaseAdmin
-        .from("forms")
-        .select("data")
-        .eq("request_id", id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
+    if (rErr || !request) return res.status(404).json({ success: false, message: "Request not found" });
 
-    if (rErr || !request) {
-      return res.status(404).json({ success: false, message: "Request not found" });
-    }
+    const parentEmail = request.parent_email ?? null;
 
-    const parentEmail = formRow?.data?.parent_email ?? null;
-
-    // ── 3. Update request + log activity in parallel ──────────────────────────
+    // 3. Update request to in_progress + log in parallel
     const [{ data, error }] = await Promise.all([
       supabaseAdmin
         .from("requests")
         .update({
           therapist_id,
-          status:      "assigned",
+          status:      "assigned",   
           assigned_at: new Date().toISOString(),
         })
         .eq("id", id)
         .select("id, child_name, parent_name, status, therapist_id")
         .single(),
 
-      supabaseAdmin.rpc("log_activity", {
-        p_actor_id:    req.user.id,
-        p_event_type:  "therapist_assigned",
-        p_entity_type: "help_request",
-        p_entity_id:   id,
-        p_message:     `${therapist.full_name} assigned to ${request.child_name}'s request`,
-      }).catch(console.warn),
+      Promise.resolve(
+        supabaseAdmin.rpc("log_activity", {
+          p_actor_id:    req.user.id,
+          p_event_type:  "therapist_assigned",
+          p_entity_type: "help_request",
+          p_entity_id:   id,
+          p_message:     `${therapist.full_name} assigned to ${request.child_name}'s request`,
+        })
+      ).catch(console.warn),
     ]);
 
     if (error) {
-      if (error.code === "PGRST116") {
-        return res.status(404).json({ success: false, message: "Request not found" });
-      }
+      if (error.code === "PGRST116") return res.status(404).json({ success: false, message: "Request not found" });
+      // DB check constraint — status value not in allowed list
+      if (error.code === "23514") return res.status(500).json({ success: false, message: "Database configuration error: status value not permitted. Please contact support." });
       throw error;
     }
 
-    // ── 4. Respond immediately — emails fire after response is sent ───────────
-    res.status(200).json({
-      success: true,
-      message: `${therapist.full_name} assigned successfully`,
-      data,
-    });
+    // 4. Respond immediately — emails fire outside the request cycle
+    res.status(200).json({ success: true, message: `${therapist.full_name} assigned successfully`, data });
 
-    // setImmediate pushes email work to the next event loop tick,
-    // completely outside the request/response cycle.
     setImmediate(() => {
       if (parentEmail) {
         sendTherapistAssignedToParentEmail({
@@ -248,22 +196,23 @@ exports.assignTherapist = async (req, res) => {
           therapistEmail:     therapist.email,
           therapistPhone:     therapist.phone          ?? null,
           therapistSpecialty: therapist.specialization ?? "Therapist",
-        }).catch((e) => console.warn("[assignTherapist] parent email:", e.message));
+        }).catch(e => console.warn("[assignTherapist] parent email failed:", e.message));
       } else {
-        console.warn("[assignTherapist] No parent email for request", id);
+        console.warn("[assignTherapist] No parent_email on request", id);
       }
 
       if (therapist.email) {
         sendPatientAssignedToTherapistEmail({
-          to:            therapist.email,
-          therapistName: therapist.full_name,
-          parentName:    request.parent_name,
-          childName:     request.child_name,
-          childAge:      request.child_age  ?? null,
-          location:      request.location   ?? null,
-          notes:         request.notes      ?? null,
-          parentEmail:   parentEmail        ?? null,
-        }).catch((e) => console.warn("[assignTherapist] therapist email:", e.message));
+          to:             therapist.email,
+          therapistName:  therapist.full_name,
+          parentName:     request.parent_name,
+          childName:      request.child_name,
+          childAge:       request.child_age        ?? null,
+          location:       request.location         ?? null,
+          notes:          request.additional_notes ?? null,
+          primaryConcerns: request.primary_concerns ?? null,
+          parentEmail:    parentEmail              ?? null,
+        }).catch(e => console.warn("[assignTherapist] therapist email failed:", e.message));
       }
     });
 
@@ -272,39 +221,26 @@ exports.assignTherapist = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+// do error message for this
+//  getaddrinfo ENOTFOUND ststephens.885af55b4ae90f821f3ac74eefa759bf.r2.cloudflarestorage.com
 // ─── PATCH /api/requests/:id/status ──────────────────────────────────────────
-// Admin or therapist: update request status
 exports.updateStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
     const { role, id: userId } = req.user;
 
-    const VALID = ["pending", "assigned", "in-progress", "completed", "cancelled"];
+    const VALID = ["pending", "assigned", "in_progress", "completed", "cancelled"];
     if (!VALID.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid status. Must be one of: ${VALID.join(", ")}`,
-      });
+      return res.status(400).json({ success: false, message: `Invalid status. Must be one of: ${VALID.join(", ")}` });
     }
 
-    // Therapist can only update requests assigned to them
-    // and can only move to in-progress or completed
     if (role === "therapist") {
-      const THERAPIST_ALLOWED = ["in-progress", "completed"];
-      if (!THERAPIST_ALLOWED.includes(status)) {
-        return res.status(403).json({
-          success: false,
-          message: "Therapists can only set status to in-progress or completed",
-        });
+      const ALLOWED = ["in_progress", "completed"];
+      if (!ALLOWED.includes(status)) {
+        return res.status(403).json({ success: false, message: "Therapists can only set status to in_progress or completed" });
       }
-
-      const { data: existing } = await supabaseAdmin
-        .from("requests")
-        .select("therapist_id")
-        .eq("id", id)
-        .single();
-
+      const { data: existing } = await supabaseAdmin.from("requests").select("therapist_id").eq("id", id).single();
       if (existing?.therapist_id !== userId) {
         return res.status(403).json({ success: false, message: "Not authorised to update this request" });
       }
@@ -338,7 +274,6 @@ exports.updateStatus = async (req, res) => {
 };
 
 // ─── GET /api/requests/my-cases ───────────────────────────────────────────────
-// Therapist: their own assigned requests only
 exports.getMyCases = async (req, res) => {
   try {
     const { status } = req.query;
@@ -366,24 +301,14 @@ exports.getMyCases = async (req, res) => {
 };
 
 // ─── DELETE /api/requests/:id ─────────────────────────────────────────────────
-// Admin only: hard delete (video stays in R2 until manually purged)
 exports.deleteRequest = async (req, res) => {
   try {
     const { data: existing, error: fetchErr } = await supabaseAdmin
-      .from("requests")
-      .select("id, child_name")
-      .eq("id", req.params.id)
-      .single();
+      .from("requests").select("id, child_name").eq("id", req.params.id).single();
 
-    if (fetchErr || !existing) {
-      return res.status(404).json({ success: false, message: "Request not found" });
-    }
+    if (fetchErr || !existing) return res.status(404).json({ success: false, message: "Request not found" });
 
-    const { error } = await supabaseAdmin
-      .from("requests")
-      .delete()
-      .eq("id", req.params.id);
-
+    const { error } = await supabaseAdmin.from("requests").delete().eq("id", req.params.id);
     if (error) throw error;
 
     return res.status(200).json({ success: true, message: "Request deleted" });
