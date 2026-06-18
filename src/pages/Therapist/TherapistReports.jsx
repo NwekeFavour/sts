@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   FileText, UploadCloud, Download,
   ChevronDown, X, CheckCircle, AlertCircle, Sparkles,
+  ClipboardList,
+  CheckCircle2,
 } from "lucide-react";
 import useTherapistStore from "../../store/useTherapistStore";
 
@@ -81,6 +83,48 @@ function StatusPill({ status }) {
   );
 }
 
+
+
+function ReportRequirementsBadge() {
+  const requirements = [
+    "Therapist name, report date, and session duration",
+    "Child's name and age",
+    "Summary of concluded program/session",
+    "Goals or objectives addressed",
+    "Challenges or barriers encountered",
+    "Progress and outcomes with specific examples",
+    "Recommendations and next steps",
+  ];
+
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <ClipboardList className="w-4 h-4 text-amber-700" />
+        <h3 className="text-sm font-semibold text-amber-900">
+          Report Requirements
+        </h3>
+      </div>
+
+      <p className="text-xs text-amber-800 mb-3">
+        Before uploading your report, ensure the attached document includes the
+        following:
+      </p>
+
+      <div className="grid gap-2">
+        {requirements.map((item) => (
+          <div
+            key={item}
+            className="flex items-start gap-2 text-xs text-amber-900"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <span>{item}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Upload modal ────────────────────────────────────── */
 function UploadModal({ cases, onClose, onSuccess }) {
   const { uploadReport } = useTherapistStore();
@@ -133,6 +177,7 @@ function UploadModal({ cases, onClose, onSuccess }) {
 
         {/* Body */}
         <div className="p-5 space-y-4">
+          <ReportRequirementsBadge />
           {/* Case */}
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
