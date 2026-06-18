@@ -133,7 +133,7 @@ if (profileErr) {
         full_name,
         email,
         specialization,
-        status: 'pending',
+        status: 'active',
       },
     });
   } catch (err) {
