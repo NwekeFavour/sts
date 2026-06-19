@@ -26,6 +26,8 @@ import LabUploadPage from "./pages/labupload";
 import useAuthStore from "./store/useAuthStore";
 import { Loader2 } from "lucide-react";
 import { therapistRoutes } from "./pages/Therapist/routes";
+import PrivacyPolicy from "./pages/privacy"
+import TermsOfService from "./pages/termsofservice";
 
 function App() {
      const fetchMe = useAuthStore((state) => state.fetchMe);
@@ -89,6 +91,8 @@ function App() {
 
         <Route path="*" element={<NotFound />} />
         <Route path="/new" element={<StStephensChatbot/>}/>
+        <Route path="/privacy" element={<PrivacyPolicy/>}/>
+        <Route path="/tos" element={<TermsOfService/>}/>
       </Routes>
       <Toaster
         position="top-right"

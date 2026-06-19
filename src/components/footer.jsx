@@ -215,19 +215,19 @@ const Footer = () => {
           </p>
 
           <div className="flex items-center gap-6">
-            <Link
-              to="/privacy"
+            <a
+              href="/privacy"
               className="text-sm text-stone-500 hover:text-black transition-colors"
             >
               Privacy Policy
-            </Link>
+            </a>
 
-            <Link
-              to="/terms"
+            <a
+              href="/tos"
               className="text-sm text-stone-500 hover:text-black transition-colors"
             >
               Terms of Service
-            </Link>
+            </a>
           </div>
         </div>
       </div>

@@ -295,7 +295,7 @@ export default function Home() {
 
                 {/* step number */}
                 <div className="flex items-center justify-between mb-8">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-stone-900 text-[#C5FF4D] font-bold text-sm shadow-md">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#513424] text-[#fff] font-bold text-sm shadow-md">
                     {step.n}
                   </span>
 
