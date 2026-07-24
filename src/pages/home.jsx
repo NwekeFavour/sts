@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import Navbar from "../components/header";
 import Footer from "../components/footer";
-import The from "../assets/images/the.jpeg"
-
+import The from "../assets/images/the.jpeg";
+import imgCeo from "../assets/images/ceo.jpg";
 const STATS = [
   { value: "200+", label: "Families Supported" },
   { value: "40+", label: "Certified Therapists" },
@@ -22,7 +22,7 @@ const HIGHLIGHTS = [
   {
     title: "Personalized Individual Therapeutic Program",
     desc: "This program focuses on developing each child’s behavior, communication, and social interaction skills. Every treatment plan is tailored to meet the individual needs of the child.",
-  }
+  },
 ];
 
 const SERVICES_PREVIEW = [
@@ -60,97 +60,87 @@ export default function Home() {
     <main className="min-h-screen  text-[#1A1A1A] antialiased">
       <Navbar />
       {/* ── HERO SECTION ── */}
-  <section className="relative overflow-hidden bg-black text-white min-h-screen flex items-center">
-      {/* Background image */}
-      <img
-        src={The}
-        alt="Autism therapy specialist with child"
-        className="absolute inset-0 w-full h-full object-cover opacity-40"
-      />
- 
-      {/* Gradient overlay — darkens bottom so content reads cleanly */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
- 
-      {/* Content */}
-      <div className="relative z-10 max-w-dvw mx-auto px-6 lg:px-12 py-32 lg:py-40 w-full">
-        <div className="max-w-[1000px] space-y-6">
- 
-          {/* Eyebrow */}
-          <p className="uppercase tracking-[0.3em] text-xs text-stone-300 mb-6 font-medium">
-            St. Stephen's Family Specialist
-          </p>
- 
-          {/* Headline */}
-          <h1 className="text-4xl lg:text-[54px] md:font-bold leading-[1.1] tracking-tight">
-            Every Autistic Child Deserves to{" "}
-            <span className="italic md:font-normal font-bold text-[#C8A97E]">Flourish</span>
-          </h1>
- 
-          {/* Sub */}
-          <p className="mt-6 text-[15px] lg:text-[16px] text-stone-300 max-w-xl leading-relaxed">
-            We provide personalised treatment programmes designed for each
-            individual on the autism spectrum, so every child gets the care
-            they truly need.
-          </p>
- 
-          {/* CTAs */}
-          <div className="flex flex-wrap gap-4 mt-10">
-            <a
-              href="/new"
-              className="group px-6 py-3.5 bg-[#E48E15] text-white font-medium rounded-full hover:bg-[#e48e15] transition-all duration-200 text-sm inline-flex items-center gap-2 shadow-lg"
-            >
-              Talk With Support Assistant
-              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-            </a>
-            <a
-              href="/new/?therapist=true"
-              className="px-6 py-3.5 border border-white/30 text-white font-medium rounded-full hover:bg-white/10 transition-all duration-200 text-sm backdrop-blur-sm"
-            >
-              Request For Help
-            </a>
-          </div>
- 
-          {/* Service pills */}
-          <div className="flex flex-wrap gap-2 mt-10">
-            {SERVICES_PREVIEW.map((s) => (
-              <span
-                key={s.name}
-                className="px-4 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 text-xs font-medium text-stone-200 rounded-full"
-              >
-                {s.name}
-              </span>
-            ))}
-          </div>
- 
-          {/* Team avatars */}
-          <div className="pt-10 mt-2 border-t border-white/10">
-            <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-4">
-              Meet the Minds Behind Your Care
+      <section className="relative overflow-hidden bg-black text-white min-h-screen flex items-center">
+        {/* Background image */}
+        <img
+          src={The}
+          alt="Autism therapy specialist with child"
+          className="absolute inset-0 w-full h-full object-cover opacity-40"
+        />
+
+        {/* Gradient overlay — darkens bottom so content reads cleanly */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
+
+        {/* Content */}
+        <div className="relative z-10 max-w-dvw mx-auto px-6 lg:px-12 py-32 lg:py-40 w-full">
+          <div className="max-w-[1000px] space-y-6">
+            {/* Eyebrow */}
+            <p className="uppercase tracking-[0.3em] text-xs text-stone-300 mb-6 font-medium">
+              St. Stephen's Family Specialist
             </p>
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-4 overflow-hidden">
-  {[
-    "https://images.unsplash.com/photo-1632054229892-21103035a686?q=80&w=400&auto=format&fit=crop&fit=faces",
-    "https://images.unsplash.com/photo-1643297654416-05795d62e39c?q=80&w=400&auto=format&fit=crop&fit=faces",
-    "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?q=80&w=400&auto=format&fit=crop&fit=faces",
-  ].map((img, i) => (
-    <img
-      key={i}
-      src={img}
-      alt="Therapy specialist"
-      className="h-11 w-11 rounded-full object-cover border-2 border-white/20 shadow-md hover:scale-105 transition-transform duration-200"
-    />
-  ))}
-</div>
-              <button className="h-10 px-4 rounded-full border border-white/20 text-xs font-medium text-stone-300 hover:bg-white/10 transition-colors backdrop-blur-sm">
-                See all →
-              </button>
+
+            {/* Headline */}
+            <h1 className="text-4xl lg:text-[54px] md:font-bold leading-[1.1] tracking-tight">
+              Every Autistic Child Deserves to{" "}
+              <span className="italic md:font-normal font-bold text-[#C8A97E]">
+                Flourish
+              </span>
+            </h1>
+
+            {/* Sub */}
+            <p className="mt-6 text-[15px] lg:text-[16px] text-stone-300 max-w-xl leading-relaxed">
+              We provide personalised treatment programmes designed for each
+              individual on the autism spectrum, so every child gets the care
+              they truly need.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-wrap gap-4 mt-10">
+              <a
+                href="/new"
+                className="group px-6 py-3.5 bg-[#E48E15] text-white font-medium rounded-full hover:bg-[#e48e15] transition-all duration-200 text-sm inline-flex items-center gap-2 shadow-lg"
+              >
+                Talk With Support Assistant
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              </a>
+              <a
+                href="/new/?therapist=true"
+                className="px-6 py-3.5 border border-white/30 text-white font-medium rounded-full hover:bg-white/10 transition-all duration-200 text-sm backdrop-blur-sm"
+              >
+                Request For Help
+              </a>
+            </div>
+
+            {/* Service pills */}
+            <div className="flex flex-wrap gap-2 mt-10">
+              {SERVICES_PREVIEW.map((s) => (
+                <span
+                  key={s.name}
+                  className="px-4 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 text-xs font-medium text-stone-200 rounded-full"
+                >
+                  {s.name}
+                </span>
+              ))}
+            </div>
+
+            {/* Team avatars */}
+            <div className="pt-10 mt-2 border-t border-white/10">
+              <p className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-4">
+                Meet the Minds Behind Your Care
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-4 overflow-hidden">
+                  <img
+                    src={imgCeo}
+                    alt="Therapy specialist"
+                    className="h-11 w-11 rounded-full object-cover border-2 border-white/20 shadow-md hover:scale-105 transition-transform duration-200"
+                  />
+                </div>
+              </div>
             </div>
           </div>
- 
         </div>
-      </div>
-    </section>
+      </section>
 
       {/* ── WHY CHOOSE US SECTION ── */}
       <section className="py-20 bg-stone-50 border-t border-b border-stone-100">
